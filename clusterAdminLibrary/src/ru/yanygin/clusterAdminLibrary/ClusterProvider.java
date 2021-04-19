@@ -41,6 +41,11 @@ public class ClusterProvider {
 		}
 		
 		configFile = new File(configPath);
+		if (!configFile.exists())
+		{
+			commonConfig = new Config();
+			return;
+		}
 		
 		JsonReader jsonReader;
 

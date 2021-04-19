@@ -68,7 +68,7 @@ public class ClusterViewer extends ApplicationWindow {
 		addItems();
 		
 //		String configPath = "C:\\1C_EDT_WS\\clusterAdmin\\clusteradmin.config";
-		String configPath = "C:\\1C_EDT_WS\\clusterAdmin\\config.json";
+		String configPath = "C:\\git\\OneS_ClusterAdmin\\config.json";
 
 		clusterProvider.readSavedKnownServers(configPath);
 //		clusterProvider.checkConnectToServers();
@@ -282,10 +282,10 @@ public class ClusterViewer extends ApplicationWindow {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 
-				Server newServerParams = clusterProvider.CreateNewServer();
+				Server newServerConfig = clusterProvider.CreateNewServer();
 				EditServerConnectionDialog connectionDialog;
 //				try {
-					connectionDialog = new EditServerConnectionDialog(mainForm.getDisplay().getActiveShell(), newServerParams);
+					connectionDialog = new EditServerConnectionDialog(mainForm.getDisplay().getActiveShell(), newServerConfig);
 //				} catch (Exception e1) {
 //					Activator.log(Activator.createErrorStatus(e1.getLocalizedMessage(), e1));
 //					return;
@@ -293,11 +293,23 @@ public class ClusterViewer extends ApplicationWindow {
 				
 				int dialogResult = connectionDialog.open();
 				if (dialogResult != 0) {
-					newServerParams = null;
+					newServerConfig = null;
 				}
 				else {
-					clusterProvider.addNewServerInList(newServerParams);
-					addServerItemInServersTree(newServerParams);
+					clusterProvider.addNewServerInList(newServerConfig);
+					TreeItem newServerItem = addServerItemInServersTree(newServerConfig);
+					
+					if (newServerConfig.autoconnect && newServerConfig.connect(false)) {
+						newServerItem.setImage(serverIconUp);
+
+						newServerConfig.getInfoBases().forEach(infoBaseInfo-> {
+							addInfobaseItemInServersTree(newServerItem, infoBaseInfo);
+						});
+						newServerItem.setExpanded(true);
+					} else {
+						newServerItem.setImage(serverIconDown);
+					}
+
 				}
 			}
 		});
