@@ -100,8 +100,6 @@ public class ClusterProvider {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-//		allServers = Arrays.asList(knownServersPath.split(","));
-	
 		
 	}
 	
