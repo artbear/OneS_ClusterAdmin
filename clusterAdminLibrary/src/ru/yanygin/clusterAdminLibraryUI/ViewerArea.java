@@ -42,7 +42,9 @@ public class ViewerArea extends Composite {
 	
 	Tree serversTree;
 	Menu serversTreeMenu;
-	private Table tableOfSessions;
+	
+	Table tableSessions;
+//	Menu tableSessionsMenu;
 
 	
 	ClusterProvider clusterProvider;
@@ -160,13 +162,15 @@ public class ViewerArea extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 
-				tableOfSessions.removeAll();
+				tableSessions.removeAll();
 
 				TreeItem[] item = serversTree.getSelection();
 				if (item.length == 0)
 					return;
+				
 				TreeItem serverItem = item[0];
 				Server serverConfig;
+				InfoBaseInfo infoBaseInfo;
 				List<ISessionInfo> sessions;
 
 				switch ((String) serverItem.getData("Type")) {
@@ -174,14 +178,16 @@ public class ViewerArea extends Composite {
 					serversTree.setMenu(serversTreeMenu);
 
 					serverConfig = (Server) serverItem.getData("ServerConfig");
+					infoBaseInfo = null;
+					
 					sessions = serverConfig.getSessions();
 					break;
 				case "Infobase":
 					serversTree.setMenu(null);
 
-					InfoBaseInfo infoBaseInfo = (InfoBaseInfo) serverItem.getData("InfoBaseInfo");
-
 					serverConfig = (Server) serverItem.getParentItem().getData("ServerConfig");
+					infoBaseInfo = (InfoBaseInfo) serverItem.getData("InfoBaseInfo");
+					
 					sessions = serverConfig.getInfoBaseSessions(infoBaseInfo);
 					break;
 				default:
@@ -191,7 +197,7 @@ public class ViewerArea extends Composite {
 
 				sessions.forEach(session -> {
 
-					TableItem sessionItem = new TableItem(tableOfSessions, SWT.NONE);
+					TableItem sessionItem = new TableItem(tableSessions, SWT.NONE);
 
 					String infobaseName = serverConfig.getInfoBaseName(session.getInfoBaseId());
 
@@ -201,6 +207,9 @@ public class ViewerArea extends Composite {
 							session.getUserName(), session.getWorkingProcessId().toString() };
 
 					sessionItem.setText(itemText);
+					sessionItem.setData("SessionInfo", session);
+					sessionItem.setData("ServerConfig", serverConfig);
+					sessionItem.setData("InfoBaseInfo", infoBaseInfo);
 					sessionItem.setChecked(false);
 
 				});
@@ -219,11 +228,11 @@ public class ViewerArea extends Composite {
 		columnPing.setWidth(60);
 	}
 	
+	
 	private void initServersTreeContextMenu() {
 		serversTreeMenu = new Menu(serversTree);
 		serversTree.setMenu(serversTreeMenu);
 
-		
 		MenuItem menuItemAddNewServer = new MenuItem(serversTreeMenu, SWT.NONE);
 		menuItemAddNewServer.setText("Add new Server");
 		menuItemAddNewServer.addSelectionListener(new SelectionAdapter() {
@@ -321,6 +330,7 @@ public class ViewerArea extends Composite {
 			}
 		});
 	}
+	
 
 	private TreeItem addServerItemInServersTree(Server config) {
 		TreeItem item = new TreeItem(serversTree, SWT.NONE);
@@ -340,6 +350,7 @@ public class ViewerArea extends Composite {
 		
 		return item;
 	}
+	
 
 	private void addInfobaseItemInServersTree(TreeItem serverItem, IInfoBaseInfo ibs) {
 		TreeItem item = new TreeItem(serverItem, SWT.NONE);
@@ -352,48 +363,108 @@ public class ViewerArea extends Composite {
 		item.setImage(infobaseIcon);
 		item.setChecked(false);
 	}
+	
+	
 
 	private void initSessionTable(SashForm sashForm) {
 		
-		tableOfSessions = new Table(sashForm, SWT.BORDER | SWT.FULL_SELECTION);
-		tableOfSessions.setHeaderVisible(true);
-		tableOfSessions.setLinesVisible(true);
+		tableSessions = new Table(sashForm, SWT.BORDER | SWT.FULL_SELECTION);
+		tableSessions.setHeaderVisible(true);
+		tableSessions.setLinesVisible(true);
 		
-		TableColumn tblclmnAppID = new TableColumn(tableOfSessions, SWT.NONE);
+		addSessionsTableContextMenu();
+		
+		TableColumn tblclmnAppID = new TableColumn(tableSessions, SWT.NONE);
 		tblclmnAppID.setWidth(100);
 		tblclmnAppID.setText("Application");
 		
-		TableColumn tblclmnConnectionID = new TableColumn(tableOfSessions, SWT.NONE);
+		TableColumn tblclmnConnectionID = new TableColumn(tableSessions, SWT.NONE);
 		tblclmnConnectionID.setWidth(100);
 		tblclmnConnectionID.setText("ConnectionID");
 		
-		TableColumn tblclmnHostname = new TableColumn(tableOfSessions, SWT.NONE);
+		TableColumn tblclmnHostname = new TableColumn(tableSessions, SWT.NONE);
 		tblclmnHostname.setWidth(100);
 		tblclmnHostname.setText("Hostname");
 		
-		TableColumn tblclmnInfobaseID = new TableColumn(tableOfSessions, SWT.NONE);
+		TableColumn tblclmnInfobaseID = new TableColumn(tableSessions, SWT.NONE);
 		tblclmnInfobaseID.setWidth(100);
 		tblclmnInfobaseID.setText("Infobase ID");
 		
-		TableColumn tblclmnLastActive = new TableColumn(tableOfSessions, SWT.NONE);
+		TableColumn tblclmnLastActive = new TableColumn(tableSessions, SWT.NONE);
 		tblclmnLastActive.setWidth(100);
 		tblclmnLastActive.setText("Last active at");
 		
-		TableColumn tblclmnSessionID = new TableColumn(tableOfSessions, SWT.NONE);
+		TableColumn tblclmnSessionID = new TableColumn(tableSessions, SWT.NONE);
 		tblclmnSessionID.setWidth(100);
 		tblclmnSessionID.setText("SessionID");
 		
-		TableColumn tblclmnStartedAt = new TableColumn(tableOfSessions, SWT.NONE);
+		TableColumn tblclmnStartedAt = new TableColumn(tableSessions, SWT.NONE);
 		tblclmnStartedAt.setWidth(100);
 		tblclmnStartedAt.setText("Started At");
 		
-		TableColumn tblclmnUserName = new TableColumn(tableOfSessions, SWT.NONE);
+		TableColumn tblclmnUserName = new TableColumn(tableSessions, SWT.NONE);
 		tblclmnUserName.setWidth(100);
 		tblclmnUserName.setText("Username");
 		
-		TableColumn tblclmnWorkingProcessID = new TableColumn(tableOfSessions, SWT.NONE);
+		TableColumn tblclmnWorkingProcessID = new TableColumn(tableSessions, SWT.NONE);
 		tblclmnWorkingProcessID.setWidth(100);
 		tblclmnWorkingProcessID.setText("rphost ID");
+		
+
+		
+	}
+
+	private void addSessionsTableContextMenu() {
+//		Menu menu2 = new Menu(tableSessions);
+//		tableSessions.setMenu(menu2);
+//		
+//		MenuItem menuItemEditServer_1 = new MenuItem(menu2, SWT.NONE);
+//		menuItemEditServer_1.setText("Edit Server");
+		
+		Menu tableSessionsMenu = new Menu(tableSessions);
+		tableSessions.setMenu(tableSessionsMenu);
+		
+		MenuItem menuItemKillSession = new MenuItem(tableSessionsMenu, SWT.NONE);
+		menuItemKillSession.setText("Kill session");
+		menuItemKillSession.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				TableItem[] selectedItems = tableSessions.getSelection();
+				if (selectedItems.length == 0)
+					return;
+				
+				for (TableItem item : selectedItems) {
+					ISessionInfo sessionInfo = (ISessionInfo) item.getData("SessionInfo");
+					Server server = (Server) item.getData("ServerConfig");
+					server.terminateSession(sessionInfo.getSid());
+
+				}
+				
+//				selectedItems.forEach(session -> {
+//
+//					TableItem sessionItem = new TableItem(tableSessions, SWT.NONE);
+//
+//					String infobaseName = serverConfig.getInfoBaseName(session.getInfoBaseId());
+//
+//					String[] itemText = { session.getAppId(), session.getConnectionId().toString(), session.getHost(),
+//							infobaseName, session.getLastActiveAt().toString(),
+//							Integer.toString(session.getSessionId()), session.getStartedAt().toString(),
+//							session.getUserName(), session.getWorkingProcessId().toString() };
+//
+//					sessionItem.setText(itemText);
+//					sessionItem.setData("SessionInfo", session);
+//					sessionItem.setChecked(false);
+//
+//				});
+				
+				
+//				Server serverConfig = (Server) item[0].getData("ServerConfig");
+//				
+//				clusterProvider.removeServerInList(serverConfig);
+//				
+//				item[0].dispose();
+			}
+		});
 	}
 
 	private void initIcon() {

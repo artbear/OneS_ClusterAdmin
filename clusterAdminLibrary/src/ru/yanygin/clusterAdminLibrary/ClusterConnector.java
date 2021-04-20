@@ -230,6 +230,18 @@ public final class ClusterConnector
         	connection.terminateSession(clusterId, session.getSid());
         }
     }	
+    
+    public void terminateSession(UUID clusterId, UUID sessionId)
+    {
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
+
+        connection.terminateSession(clusterId, sessionId);
+
+    }	
+
     /**
      * Get sessions for infobase in the cluster
      *

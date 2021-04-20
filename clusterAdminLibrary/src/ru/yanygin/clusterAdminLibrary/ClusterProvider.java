@@ -172,10 +172,9 @@ public class ClusterProvider {
 		}
 		
 		return infobases;
-	
-	
 	}
 	
+
 	
 	
 	

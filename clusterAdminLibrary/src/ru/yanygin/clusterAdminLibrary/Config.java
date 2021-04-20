@@ -282,6 +282,13 @@ public class Config {
 	        return clusterConnector.getSessions(clusterID);
 	        
 	    }
+		
+		public void terminateSession(UUID sessionId) {
+			
+			clusterConnector.terminateSession(clusterID, sessionId);
+			
+		}
+		
 	}
 }
 

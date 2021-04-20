@@ -53,11 +53,11 @@ public class ClusterViewer extends ApplicationWindow {
 	Image serverIconDown;
 	Image infobaseIcon;
 
-//	ServersTree serversTree;
+	Tree serversTree;
 	Composite mainForm;
 	
 	ClusterProvider clusterProvider = new ClusterProvider();
-//	private Table tableOfSessions;
+	private Table tableOfSessions;
 
 	/**
 	 * Create the application window.
@@ -78,6 +78,16 @@ public class ClusterViewer extends ApplicationWindow {
 
 	}
 
+	@Override
+	public boolean close() {
+		
+		clusterProvider.getServers().forEach((server, config) -> {
+			if (config.clusterConnector.isConnected())
+				config.clusterConnector.disconnect();
+		});
+		
+		return super.close();
+	}
 	/**
 	 * Create contents of the application window.
 	 * @param parent
@@ -85,46 +95,51 @@ public class ClusterViewer extends ApplicationWindow {
 	@Override
 	protected Control createContents(Composite parent) {
 		this.mainForm = parent;
-		ViewerArea container = new ViewerArea(parent, SWT.NONE, this, clusterProvider);
 		
+		//ViewerArea container = new ViewerArea(parent, SWT.NONE, this, clusterProvider);
+		
+		Composite container = alternativeInit(parent);
+		
+		
+		return container;
+	}
 
-//		SashForm sashForm = new SashForm(parent, SWT.VERTICAL);
-		
-//		getToolBarManager().add(getMenuBarManager());
+	private Composite alternativeInit(Composite parent) {
+		Composite container = new Composite(parent, SWT.NONE);
 		
 		// Toolbar
 //		ToolBar toolBar = new ToolBar(container, SWT.FLAT | SWT.RIGHT);
 //		toolBar.setBounds(0, 0, 500, 23);
-//		ToolBar toolBar = getToolBarManager().createControl(container);
-//		final Cursor handCursor = new Cursor(Display.getCurrent(), SWT.CURSOR_HAND);
-//		toolBar.setCursor(handCursor);
-//		// Cursor needs to be explicitly disposed
-//		toolBar.addDisposeListener(new DisposeListener() {
-//			public void widgetDisposed(DisposeEvent e) {
-//				if (handCursor.isDisposed() == false) {
-//					handCursor.dispose();
-//				}
-//			}
-//		});
-//		
-//		ToolItem toolBarItemFindNewServers = new ToolItem(toolBar, SWT.NONE);
-//		toolBarItemFindNewServers.setText("Find new Servers");
-//		toolBarItemFindNewServers.addSelectionListener(new SelectionAdapter() {
-//			@Override
-//			public void widgetSelected(SelectionEvent e) {
+		ToolBar toolBar = getToolBarManager().createControl(container);
+		final Cursor handCursor = new Cursor(Display.getCurrent(), SWT.CURSOR_HAND);
+		toolBar.setCursor(handCursor);
+		// Cursor needs to be explicitly disposed
+		toolBar.addDisposeListener(new DisposeListener() {
+			public void widgetDisposed(DisposeEvent e) {
+				if (handCursor.isDisposed() == false) {
+					handCursor.dispose();
+				}
+			}
+		});
+		
+		ToolItem toolBarItemFindNewServers = new ToolItem(toolBar, SWT.NONE);
+		toolBarItemFindNewServers.setText("Find new Servers");
+		toolBarItemFindNewServers.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
 //				List<String> newServers = clusterProvider.findNewServers();
 //				if (!newServers.isEmpty()) {
 //					fillServersList();
 //				}
-//			}
-//		});
-//
-//		ToolItem toolBarItemConnectToServers = new ToolItem(toolBar, SWT.NONE);
-//		toolBarItemConnectToServers.setText("Connect to servers");		
-//		toolBarItemConnectToServers.addSelectionListener(new SelectionAdapter() {
-//			@Override
-//			public void widgetSelected(SelectionEvent e) {
-//				
+			}
+		});
+
+		ToolItem toolBarItemConnectToServers = new ToolItem(toolBar, SWT.NONE);
+		toolBarItemConnectToServers.setText("Connect to servers");		
+		toolBarItemConnectToServers.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				
 //				clusterProvider.connectToServers();
 //				List<String> connectedServers = clusterProvider.getConnectedServers();
 //				
@@ -145,7 +160,7 @@ public class ClusterViewer extends ApplicationWindow {
 //						if (serverConfig.clusterConnector.isConnected()) {
 //							List<IInfoBaseInfo> infoBaseInfoList = clusterProvider.getInfobases(serverConfig);
 //							for (IInfoBaseInfo infoBaseInfo : infoBaseInfoList) {
-//								addInfobaseItemInServersTree(serverItem, infoBaseInfo);
+////								addInfobaseItemInServersTree(serverItem, infoBaseInfo);
 //							}
 //						}
 //
@@ -154,15 +169,15 @@ public class ClusterViewer extends ApplicationWindow {
 //						serversItem[i].setImage(serverIconDown);
 //					}
 //				}
-//				
-//			}
-//		});
-//		container.setLayout(new FillLayout(SWT.HORIZONTAL));
+				
+			}
+		});
+		container.setLayout(new FillLayout(SWT.HORIZONTAL));
 		
-//		SashForm sashForm = new SashForm(container, SWT.NONE);
+		SashForm sashForm = new SashForm(container, SWT.NONE);
 		
 		
-//		serversTree = new ServersTree(sashForm, SWT.BORDER, clusterProvider);
+		serversTree = new Tree(sashForm, SWT.BORDER);
 
 //		serversTree = new Tree(sashForm, SWT.BORDER);
 //		serversTree.addSelectionListener(new SelectionAdapter() {
@@ -224,28 +239,28 @@ public class ClusterViewer extends ApplicationWindow {
 //			}
 //		});
 //		
-//		serversTree.setHeaderVisible(true);
-//		TreeColumn columnServer = new TreeColumn(serversTree, SWT.LEFT);
-//		columnServer.setText("Cluster/Infobase");
-//		columnServer.setWidth(200);
-//		
-//		TreeColumn columnPing = new TreeColumn(serversTree, SWT.CENTER);
-//		columnPing.setText("RAS port");
-//		columnPing.setWidth(60);
+		serversTree.setHeaderVisible(true);
+		TreeColumn columnServer = new TreeColumn(serversTree, SWT.LEFT);
+		columnServer.setText("Cluster/Infobase");
+		columnServer.setWidth(200);
+		
+		TreeColumn columnPing = new TreeColumn(serversTree, SWT.CENTER);
+		columnPing.setText("RAS port");
+		columnPing.setWidth(60);
 //		
 ////		TreeColumn columnBase = new TreeColumn(serversTree, SWT.LEFT);
 ////		columnBase.setText("Base name");
 ////		columnBase.setWidth(200);
 //		
-//		Menu menu = new Menu(serversTree);
-//		serversTree.setMenu(menu);
+		Menu menu = new Menu(serversTree);
+		serversTree.setMenu(menu);
 //		
-//		MenuItem menuItemEditServer = new MenuItem(menu, SWT.NONE);
-//		menuItemEditServer.setText("Edit Server");
-//		menuItemEditServer.addSelectionListener(new SelectionAdapter() {
-//			@Override
-//			public void widgetSelected(SelectionEvent e) {
-//				
+		MenuItem menuItemEditServer = new MenuItem(menu, SWT.NONE);
+		menuItemEditServer.setText("Edit Server");
+		menuItemEditServer.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				
 //				TreeItem[] item = serversTree.getSelection();
 //				if (item.length == 0)
 //					return;
@@ -277,9 +292,9 @@ public class ClusterViewer extends ApplicationWindow {
 //					}
 //					
 //				}
-//
-//			}
-//		});
+
+			}
+		});
 		
 //		MenuItem menuItemAddNewServer = new MenuItem(menu, SWT.NONE);
 //		menuItemAddNewServer.setText("Add new Server");
@@ -336,13 +351,19 @@ public class ClusterViewer extends ApplicationWindow {
 //			}
 //		});
 		
-//		tableOfSessions = new Table(sashForm, SWT.BORDER | SWT.FULL_SELECTION);
-//		tableOfSessions.setHeaderVisible(true);
-//		tableOfSessions.setLinesVisible(true);
+		tableOfSessions = new Table(sashForm, SWT.BORDER | SWT.FULL_SELECTION);
+		tableOfSessions.setHeaderVisible(true);
+		tableOfSessions.setLinesVisible(true);
+		
+		Menu menu2 = new Menu(tableOfSessions);
+		tableOfSessions.setMenu(menu2);
+		
+		MenuItem menuItemEditServer_1 = new MenuItem(menu2, SWT.NONE);
+		menuItemEditServer_1.setText("Edit Server");
 //		
-//		TableColumn tblclmnAppID = new TableColumn(tableOfSessions, SWT.NONE);
-//		tblclmnAppID.setWidth(100);
-//		tblclmnAppID.setText("Application");
+		TableColumn tblclmnAppID = new TableColumn(tableOfSessions, SWT.NONE);
+		tblclmnAppID.setWidth(100);
+		tblclmnAppID.setText("Application");
 //		
 //		TableColumn tblclmnConnectionID = new TableColumn(tableOfSessions, SWT.NONE);
 //		tblclmnConnectionID.setWidth(100);
@@ -376,7 +397,7 @@ public class ClusterViewer extends ApplicationWindow {
 //		tblclmnWorkingProcessID.setWidth(100);
 //		tblclmnWorkingProcessID.setText("rphost ID");
 
-//		sashForm.setWeights(new int[] {1, 2});
+		sashForm.setWeights(new int[] {1, 2});
 	
 //		initIcon();
 		
@@ -390,8 +411,6 @@ public class ClusterViewer extends ApplicationWindow {
 //				}
 //			}
 //		});
-		
-		
 		return container;
 	}
 
