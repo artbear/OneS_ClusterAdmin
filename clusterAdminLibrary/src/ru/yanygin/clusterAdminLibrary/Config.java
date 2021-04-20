@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com._1c.v8.ibis.admin.IClusterInfo;
+import com._1c.v8.ibis.admin.IInfoBaseConnectionShort;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.ISessionInfo;
 import com._1c.v8.ibis.admin.client.AgentAdminConnectorFactory;
@@ -280,6 +281,16 @@ public class Config {
 				return sessions;
 			
 	        return clusterConnector.getSessions(clusterID);
+	        
+	    }
+
+	    public List<IInfoBaseConnectionShort> getConnections()
+	    {
+	    	List<IInfoBaseConnectionShort> connections = new ArrayList<>();
+			if (!clusterConnector.isConnected())
+				return connections;
+			
+	        return clusterConnector.getConnectionsShort(clusterID);
 	        
 	    }
 		

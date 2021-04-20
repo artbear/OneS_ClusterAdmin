@@ -45,6 +45,8 @@ import org.eclipse.swt.custom.ViewForm;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 
 public class ClusterViewer extends ApplicationWindow {
 	
@@ -96,9 +98,9 @@ public class ClusterViewer extends ApplicationWindow {
 	protected Control createContents(Composite parent) {
 		this.mainForm = parent;
 		
-		//ViewerArea container = new ViewerArea(parent, SWT.NONE, this, clusterProvider);
+		ViewerArea container = new ViewerArea(parent, SWT.NONE, this, clusterProvider);
 		
-		Composite container = alternativeInit(parent);
+		//Composite container = alternativeInit(parent);
 		
 		
 		return container;
@@ -296,6 +298,11 @@ public class ClusterViewer extends ApplicationWindow {
 			}
 		});
 		
+		TabFolder tabFolder = new TabFolder(sashForm, SWT.NONE);
+		
+		TabItem tabItem = new TabItem(tabFolder, SWT.NONE);
+		tabItem.setText("New Item");
+		
 //		MenuItem menuItemAddNewServer = new MenuItem(menu, SWT.NONE);
 //		menuItemAddNewServer.setText("Add new Server");
 //		menuItemAddNewServer.addSelectionListener(new SelectionAdapter() {
@@ -351,7 +358,8 @@ public class ClusterViewer extends ApplicationWindow {
 //			}
 //		});
 		
-		tableOfSessions = new Table(sashForm, SWT.BORDER | SWT.FULL_SELECTION);
+		tableOfSessions = new Table(tabFolder, SWT.BORDER | SWT.CHECK | SWT.FULL_SELECTION | SWT.HIDE_SELECTION | SWT.VIRTUAL | SWT.MULTI);
+		tabItem.setControl(tableOfSessions);
 		tableOfSessions.setHeaderVisible(true);
 		tableOfSessions.setLinesVisible(true);
 		
@@ -360,10 +368,10 @@ public class ClusterViewer extends ApplicationWindow {
 		
 		MenuItem menuItemEditServer_1 = new MenuItem(menu2, SWT.NONE);
 		menuItemEditServer_1.setText("Edit Server");
-//		
-		TableColumn tblclmnAppID = new TableColumn(tableOfSessions, SWT.NONE);
-		tblclmnAppID.setWidth(100);
-		tblclmnAppID.setText("Application");
+		//		
+				TableColumn tblclmnAppID = new TableColumn(tableOfSessions, SWT.NONE);
+				tblclmnAppID.setWidth(100);
+				tblclmnAppID.setText("Application");
 //		
 //		TableColumn tblclmnConnectionID = new TableColumn(tableOfSessions, SWT.NONE);
 //		tblclmnConnectionID.setWidth(100);

@@ -6,6 +6,7 @@ import java.util.UUID;
 import com._1c.v8.ibis.admin.AgentAdminException;
 import com._1c.v8.ibis.admin.IAgentAdminConnection;
 import com._1c.v8.ibis.admin.IClusterInfo;
+import com._1c.v8.ibis.admin.IInfoBaseConnectionShort;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfoShort;
 import com._1c.v8.ibis.admin.ISessionInfo;
@@ -269,6 +270,28 @@ public final class ClusterConnector
 		}
 
         return connection.getSessions(clusterId);
+        
+    }
+    
+    public List<IInfoBaseConnectionShort> getConnectionsShort(UUID clusterId)
+    {
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
+
+        return connection.getConnectionsShort(clusterId);
+        
+    }
+    
+    public IInfoBaseConnectionShort getConnectionInfoShort(UUID clusterId, UUID connectionId)
+    {
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
+
+        return connection.getConnectionInfoShort(clusterId, connectionId);
         
     }
 }
