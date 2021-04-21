@@ -545,6 +545,6 @@ public class ClusterViewer extends ApplicationWindow {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point(1000, 600);
+		return new Point(1600, 800);
 	}
 }

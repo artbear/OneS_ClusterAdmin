@@ -95,7 +95,7 @@ public class ViewerArea extends Composite {
 
 		
 		// Пропорции областей
-		sashForm.setWeights(new int[] {1, 2});
+		sashForm.setWeights(new int[] {1, 4});
 
 	}
 
@@ -124,9 +124,9 @@ public class ViewerArea extends Composite {
 			}
 		});
 
-		ToolItem toolBarItemConnectToServers = new ToolItem(toolBar, SWT.NONE);
-		toolBarItemConnectToServers.setText("Connect to servers");		
-		toolBarItemConnectToServers.addSelectionListener(new SelectionAdapter() {
+		ToolItem toolBarItemConnectAllServers = new ToolItem(toolBar, SWT.NONE);
+		toolBarItemConnectAllServers.setText("Connect all servers");		
+		toolBarItemConnectAllServers.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				
@@ -172,6 +172,8 @@ public class ViewerArea extends Composite {
 		serversTree.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				
+				// нужно сделать, что бы была реакция только на левый клик мышью!
 
 				tableSessions.removeAll();
 				tableConnections.removeAll();
@@ -180,7 +182,8 @@ public class ViewerArea extends Composite {
 				if (item.length == 0)
 					return;
 				
-				TreeItem serverItem = item[0];
+//				TreeItem serverItem = item[0];
+				TreeItem serverItem = (TreeItem) e.item;
 				Server serverConfig;
 				InfoBaseInfo infoBaseInfo;
 				List<ISessionInfo> sessions;
@@ -211,52 +214,57 @@ public class ViewerArea extends Composite {
 				}
 
 				sessions.forEach(session -> {
-
-					TableItem sessionItem = new TableItem(tableSessions, SWT.NONE);
-
-					String infobaseName = serverConfig.getInfoBaseName(session.getInfoBaseId());
-
-					String[] itemText = { session.getAppId(),
-										session.getConnectionId().toString(),
-										session.getHost(),
-										infobaseName,
-										session.getLastActiveAt().toString(),
-										Integer.toString(session.getSessionId()),
-										session.getStartedAt().toString(),
-										session.getUserName(),
-										session.getWorkingProcessId().toString() };
-
-					sessionItem.setText(itemText);
-					sessionItem.setData("SessionInfo", session);
-					sessionItem.setData("ServerConfig", serverConfig);
-					sessionItem.setData("InfoBaseInfo", infoBaseInfo);
-					sessionItem.setChecked(false);
-
+					addSessionInTable(serverConfig, infoBaseInfo, session);
 				});
 
 				connections.forEach(connection -> {
-
-					TableItem connectionItem = new TableItem(tableConnections, SWT.NONE);
-
-					String infobaseName = serverConfig.getInfoBaseName(connection.getInfoBaseId());
-
-					String[] itemText = { connection.getApplication(),
-										Integer.toString(connection.getConnId()),
-										connection.getHost(),
-										infobaseName,
-										connection.getInfoBaseConnectionId().toString(),
-										connection.getConnectedAt().toString(),
-										Integer.toString(connection.getSessionNumber()),
-										connection.getWorkingProcessId().toString() };
-
-					connectionItem.setText(itemText);
-					connectionItem.setData("Connection", connection);
-					connectionItem.setData("ServerConfig", serverConfig);
-					connectionItem.setData("InfoBaseInfo", infoBaseInfo);
-					connectionItem.setChecked(false);
-
+					addConnectionInTable(serverConfig, infoBaseInfo, connection);
 				});
 			}
+
+			private void addSessionInTable(Server serverConfig, InfoBaseInfo infoBaseInfo, ISessionInfo session) {
+				TableItem sessionItem = new TableItem(tableSessions, SWT.NONE);
+
+				String infobaseName = serverConfig.getInfoBaseName(session.getInfoBaseId());
+
+				String[] itemText = { session.getAppId(),
+									session.getConnectionId().toString(),
+									session.getHost(),
+									infobaseName,
+									session.getLastActiveAt().toString(),
+									Integer.toString(session.getSessionId()),
+									session.getStartedAt().toString(),
+									session.getUserName(),
+									session.getWorkingProcessId().toString() };
+
+				sessionItem.setText(itemText);
+				sessionItem.setData("SessionInfo", session);
+				sessionItem.setData("ServerConfig", serverConfig);
+				sessionItem.setData("InfoBaseInfo", infoBaseInfo);
+				sessionItem.setChecked(false);
+			}
+			
+			private void addConnectionInTable(Server serverConfig, InfoBaseInfo infoBaseInfo, IInfoBaseConnectionShort connection) {
+				TableItem connectionItem = new TableItem(tableConnections, SWT.NONE);
+
+				String infobaseName = serverConfig.getInfoBaseName(connection.getInfoBaseId());
+
+				String[] itemText = { connection.getApplication(),
+									Integer.toString(connection.getConnId()),
+									connection.getHost(),
+									infobaseName,
+									connection.getInfoBaseConnectionId().toString(),
+									connection.getConnectedAt().toString(),
+									Integer.toString(connection.getSessionNumber()),
+									connection.getWorkingProcessId().toString() };
+
+				connectionItem.setText(itemText);
+				connectionItem.setData("Connection", connection);
+				connectionItem.setData("ServerConfig", serverConfig);
+				connectionItem.setData("InfoBaseInfo", infoBaseInfo);
+				connectionItem.setChecked(false);
+			}
+
 		});
 		
 		initServersTreeContextMenu();
@@ -276,15 +284,15 @@ public class ViewerArea extends Composite {
 		serversTree.setMenu(serversTreeMenu);
 
 		MenuItem menuItemAddNewServer = new MenuItem(serversTreeMenu, SWT.NONE);
-		menuItemAddNewServer.setText("Add new Server");
+		menuItemAddNewServer.setText("Add Server");
 		menuItemAddNewServer.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 
 				Server newServerConfig = clusterProvider.CreateNewServer();
-				EditServerConnectionDialog connectionDialog;
+				EditServerDialog connectionDialog;
 //				try {
-					connectionDialog = new EditServerConnectionDialog(getParent().getDisplay().getActiveShell(), newServerConfig);
+					connectionDialog = new EditServerDialog(getParent().getDisplay().getActiveShell(), newServerConfig);
 //				} catch (Exception e1) {
 //					Activator.log(Activator.createErrorStatus(e1.getLocalizedMessage(), e1));
 //					return;
@@ -324,9 +332,9 @@ public class ViewerArea extends Composite {
 					return;
 				TreeItem serverItem = item[0];
 				Server serverConfig = (Server) serverItem.getData("ServerConfig");
-				EditServerConnectionDialog connectionDialog;
+				EditServerDialog connectionDialog;
 //				try {
-					connectionDialog = new EditServerConnectionDialog(getParent().getDisplay().getActiveShell(), serverConfig);
+					connectionDialog = new EditServerDialog(getParent().getDisplay().getActiveShell(), serverConfig);
 //				} catch (Exception e1) {
 //					Activator.log(Activator.createErrorStatus(e1.getLocalizedMessage(), e1));
 //					return;
@@ -538,26 +546,28 @@ public class ViewerArea extends Composite {
 
 	private void addConnectionsTableContextMenu() {
 		
-		Menu tableConnectionsMenu = new Menu(tableConnections);
-		tableConnections.setMenu(tableConnectionsMenu);
+		// Пока не понятен остав меню
 		
-		MenuItem menuItemKillSession = new MenuItem(tableConnectionsMenu, SWT.NONE);
-		menuItemKillSession.setText("Kill session");
-		menuItemKillSession.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				TableItem[] selectedItems = tableConnections.getSelection();
-				if (selectedItems.length == 0)
-					return;
-				
-//				for (TableItem item : selectedItems) {
-//					ISessionInfo sessionInfo = (ISessionInfo) item.getData("SessionInfo");
-//					Server server = (Server) item.getData("ServerConfig");
-//					server.terminateSession(sessionInfo.getSid());
-//				}
-				
-			}
-		});
+//		Menu tableConnectionsMenu = new Menu(tableConnections);
+//		tableConnections.setMenu(tableConnectionsMenu);
+//		
+//		MenuItem menuItemKillSession = new MenuItem(tableConnectionsMenu, SWT.NONE);
+//		menuItemKillSession.setText("Kill session");
+//		menuItemKillSession.addSelectionListener(new SelectionAdapter() {
+//			@Override
+//			public void widgetSelected(SelectionEvent e) {
+//				TableItem[] selectedItems = tableConnections.getSelection();
+//				if (selectedItems.length == 0)
+//					return;
+//				
+////				for (TableItem item : selectedItems) {
+////					ISessionInfo sessionInfo = (ISessionInfo) item.getData("SessionInfo");
+////					Server server = (Server) item.getData("ServerConfig");
+////					server.terminateSession(sessionInfo.getSid());
+////				}
+//				
+//			}
+//		});
 	}
 		
 

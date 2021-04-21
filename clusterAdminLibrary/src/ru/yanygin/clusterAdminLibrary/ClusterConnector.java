@@ -294,4 +294,15 @@ public final class ClusterConnector
         return connection.getConnectionInfoShort(clusterId, connectionId);
         
     }
+
+//    public IInfoBaseConnectionShort terminateConnection(UUID clusterId, UUID connectionId)
+//    {
+//		if (connection == null)
+//		{
+//			throw new IllegalStateException("The connection is not established.");
+//		}
+//
+//        return connection.(clusterId, connectionId);
+//        
+//    }
 }
