@@ -140,7 +140,7 @@ public final class ClusterConnector
      * @param clusterId cluster ID
      * @return list of short descriptions of cluster infobases
      */
-    public List<IInfoBaseInfoShort> getInfoBaseShortInfos(UUID clusterId)
+    public List<IInfoBaseInfoShort> getInfoBasesShort(UUID clusterId)
     {
 		if (connection == null)
 		{
@@ -175,6 +175,15 @@ public final class ClusterConnector
 		}
 		
 		return connection.getInfoBaseInfo(clusterId, infoBaseId);
+	}
+	public IInfoBaseInfoShort getInfoBaseShortInfo(UUID clusterId, UUID infoBaseId)
+	{
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
+		
+		return connection.getInfoBaseShortInfo(clusterId, infoBaseId);
 	}
 
     /**

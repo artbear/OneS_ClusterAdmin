@@ -97,7 +97,7 @@ public class Config {
 		
 		public ClusterConnector clusterConnector;
 		
-		private UUID clusterID;
+		public UUID clusterID; // private
 
 		public Server(String serverName) {
 			this.serverHost = calcHostName(serverName);
@@ -243,6 +243,7 @@ public class Config {
 
 	    public List<IInfoBaseInfo> getInfoBases()
 	    {
+	    	// сделать кеширование списка инфобаз
 	    	return clusterConnector.getInfoBases(clusterID);
 	        
 	    }

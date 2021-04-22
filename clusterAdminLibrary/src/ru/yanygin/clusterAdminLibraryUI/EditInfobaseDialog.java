@@ -1,5 +1,7 @@
 package ru.yanygin.clusterAdminLibraryUI;
 
+import java.util.Date;
+
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.graphics.Point;
@@ -7,6 +9,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+
+import com._1c.v8.ibis.admin.InfoBaseInfo;
 
 import ru.yanygin.clusterAdminLibrary.Config.Server;
 
@@ -29,53 +33,70 @@ import org.eclipse.swt.widgets.DateTime;
 public class EditInfobaseDialog extends Dialog {
 	
 	private Button btnSessionsLock;
+	private Button btnSheduledJobsLock;
+	private Button btnAllowDistributeLicense;
+	private Button btnMandatoryUseExternalManagement;
 	private Text txtInfobaseName;
 	private Text txtSecureConnection;
 	private Text txtServerDBName;
-	
-	private Button btnSheduledJobsLock;
 	private Text txtDatabaseName;
-	private Combo comboServerDBType;
-	
-	private Server serverParams;
-
-	private String serverHost;
-	private int managerPort;
-	private int remoteRasPort;
-	private boolean useLocalRas;
-	private String localRasV8version;
-	private int localRasPort;
-	private boolean autoconnect;
-	private Label lblPresent;
 	private Text txtPresent;
-	private Label lblServerDBType;
-	private Label lblDatabaseLogin;
 	private Text txtDatabaseLogin;
-	private Button btnAllowDistributeLicense;
-	private Label lblSessionsLockStart;
-	private Label lblSessionsLockStop;
-	private Label lblPermissionCode;
 	private Text txtPermissionCode;
-	private Label lblLockParameter;
 	private Text txtLockParameter;
-	private Label lblExternalSessionManagement;
-	private Label lblSecurityProfile;
-	private Label lblSafeModeSecurity;
 	private Text txtExternalSessionManagement;
 	private Text txtSecurityProfile;
 	private Text txtSafeModeSecurityProfile;
-	private Button btnMandatoryUseExternalManagement;
+	private Text txtLockMessage;
+	private Combo comboServerDBType;
+	private DateTime dateTimeLockStart;
+	private DateTime dateTimeLockStartTime;
+	private DateTime dateTimeLockStop;
+	private DateTime dateTimeLockStopTime;
+	private Text txtDatabasePwd;
+	
+	private InfoBaseInfo infoBaseInfo;
+
+	private String infobaseName;
+	private String infobasePresent;
+	private String secureConnection;
+	
+	private String serverDBName;
+	private String serverDBType; // MSSQLServer, PostgreSQL
+	private String databaseName;
+	private String databaseLogin;
+	private String databasePwd;
+	
+	private boolean allowDistributeLicense;
+	
+	private boolean sessionsLock;
+	private String lockStartDateTime;
+//	private String lockStartTime;
+	private String lockStopDateTime;
+//	private String lockStopTime;
+	private String lockMessage;
+	private String permissionCode;
+	private String lockParameter;
+	
+	private boolean sheduledJobsLock;
+	
+	private String externalSessionManagement;
+	private boolean mandatoryUseExternalManagement;
+	
+	private String securityProfile;
+	private String safeModeSecurityProfile;
+	
 
 	/**
 	 * Create the dialog.
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public EditInfobaseDialog(Shell parentShell, Server serverParams) {
+	public EditInfobaseDialog(Shell parentShell, InfoBaseInfo infoBaseInfo) {
 		super(parentShell);
-		parentShell.setText("Parameters of the central server 1C:Enterprise");
+		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 
-		this.serverParams = serverParams;
+		this.infoBaseInfo = infoBaseInfo;
 	}
 
 	/**
@@ -86,13 +107,43 @@ public class EditInfobaseDialog extends Dialog {
 	protected Control createDialogArea(Composite parent) {
 		parent.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
-				serverHost 			= txtInfobaseName.getText();
-				managerPort 		= Integer.parseInt(txtSecureConnection.getText());
-				remoteRasPort 		= Integer.parseInt(txtServerDBName.getText());
-				useLocalRas 		= btnSheduledJobsLock.getSelection();
-				localRasV8version 	= comboServerDBType.getText();
-				localRasPort 		= Integer.parseInt(txtDatabaseName.getText());
-				autoconnect 		= btnSessionsLock.getSelection();
+				infobaseName 		= txtInfobaseName.getText();
+				infobasePresent 	= txtPresent.getText();
+				secureConnection 	= txtSecureConnection.getText();
+				
+				serverDBName 	= txtServerDBName.getText();
+				serverDBType 	= comboServerDBType.getText();
+				databaseName 	= txtDatabaseName.getText();
+				databaseLogin 	= txtDatabaseLogin.getText();
+				databasePwd 	= txtDatabasePwd.getText();
+				
+				allowDistributeLicense 	= btnAllowDistributeLicense.getSelection();
+				
+				sessionsLock 	= btnSessionsLock.getSelection();
+				lockStartDateTime 	= convertDateTime(dateTimeLockStart, dateTimeLockStartTime);
+//				lockStartTime 	= dateTimeLockStartTime.getText();
+				lockStopDateTime 	= convertDateTime(dateTimeLockStop, dateTimeLockStopTime);
+//				lockStopTime 	= dateTimeLockStopTime.getText();
+				lockMessage 	= txtLockMessage.getText();
+				permissionCode 	= txtPermissionCode.getText();
+				lockParameter 	= txtLockParameter.getText();
+				
+				sheduledJobsLock = btnSheduledJobsLock.getSelection();
+				
+				externalSessionManagement 		= txtExternalSessionManagement.getText();
+				mandatoryUseExternalManagement 	= btnMandatoryUseExternalManagement.getSelection();
+				
+				securityProfile 		= txtSecurityProfile.getText();
+				safeModeSecurityProfile = txtSafeModeSecurityProfile.getText();
+
+			}
+
+			private String convertDateTime(DateTime date, DateTime time) {
+				String dateTimeString = "";
+				
+				int year = date.getYear();
+				
+				return Integer.toString(year);
 			}
 		});
 		Composite container = (Composite) super.createDialogArea(parent);
@@ -107,7 +158,7 @@ public class EditInfobaseDialog extends Dialog {
 		txtInfobaseName.setToolTipText("Infobase name");
 		txtInfobaseName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		lblPresent = new Label(container, SWT.NONE);
+		Label lblPresent = new Label(container, SWT.NONE);
 		lblPresent.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 //		lblPresent.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblPresent.setText("Present");
@@ -134,7 +185,7 @@ public class EditInfobaseDialog extends Dialog {
 		txtServerDBName.setToolTipText("Server DB name");
 		txtServerDBName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		lblServerDBType = new Label(container, SWT.NONE);
+		Label lblServerDBType = new Label(container, SWT.NONE);
 		lblServerDBType.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblServerDBType.setText("Server DB type");
 		
@@ -149,7 +200,7 @@ public class EditInfobaseDialog extends Dialog {
 		txtDatabaseName.setToolTipText("Database name");
 		txtDatabaseName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		lblDatabaseLogin = new Label(container, SWT.NONE);
+		Label lblDatabaseLogin = new Label(container, SWT.NONE);
 		lblDatabaseLogin.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblDatabaseLogin.setText("Database login");
 		
@@ -162,7 +213,7 @@ public class EditInfobaseDialog extends Dialog {
 		lblDatabasePwd.setAlignment(SWT.RIGHT);
 		lblDatabasePwd.setText("Database password");
 		
-		Text txtDatabasePwd = new Text(container, SWT.BORDER | SWT.PASSWORD);
+		txtDatabasePwd = new Text(container, SWT.BORDER | SWT.PASSWORD);
 		txtDatabasePwd.setToolTipText("Database password");
 		txtDatabasePwd.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		new Label(container, SWT.NONE);
@@ -170,39 +221,45 @@ public class EditInfobaseDialog extends Dialog {
 		btnAllowDistributeLicense = new Button(container, SWT.CHECK);
 		btnAllowDistributeLicense.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		btnAllowDistributeLicense.setText("Allow distribute license at 1C:Enterprise server");
-		
-		btnSessionsLock = new Button(container, SWT.CHECK);
-		btnSessionsLock.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
-		btnSessionsLock.setText("Sessions lock");
-		
-		lblSessionsLockStart = new Label(container, SWT.NONE);
-		lblSessionsLockStart.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
-		lblSessionsLockStart.setText("Lock start");
-		
-		lblSessionsLockStop = new Label(container, SWT.NONE);
-		lblSessionsLockStop.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
-		lblSessionsLockStop.setText("Lock stop");
-		
-		DateTime dateTimeLockStart = new DateTime(container, SWT.BORDER | SWT.DATE | SWT.DROP_DOWN);
-		dateTimeLockStart.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
-		
-		DateTime dateTimeLockStop = new DateTime(container, SWT.NONE | SWT.DROP_DOWN);
-		dateTimeLockStop.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
-		
-		DateTime dateTimeLockStartTime = new DateTime(container, SWT.BORDER | SWT.TIME | SWT.DROP_DOWN);
-		dateTimeLockStartTime.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false, 1, 1));
 		new Label(container, SWT.NONE);
 		
+		btnSessionsLock = new Button(container, SWT.CHECK);
+		btnSessionsLock.setText("Sessions lock");
+		
+		Label lblSessionsLockStart = new Label(container, SWT.NONE);
+		lblSessionsLockStart.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblSessionsLockStart.setText("Lock start:");
+		
+		Composite compositeTimeLockStart = new Composite(container, SWT.NONE);
+		compositeTimeLockStart.setLayout(new FillLayout(SWT.HORIZONTAL));
+		
+		dateTimeLockStart = new DateTime(compositeTimeLockStart, SWT.BORDER | SWT.DATE | SWT.DROP_DOWN);
+		
+		dateTimeLockStartTime = new DateTime(compositeTimeLockStart, SWT.BORDER | SWT.TIME);
+		
+		Label lblSessionsLockStop = new Label(container, SWT.NONE);
+		lblSessionsLockStop.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblSessionsLockStop.setText("Lock stop:");
+		
+		Composite compositeTimeLockStop = new Composite(container, SWT.NONE);
+		compositeTimeLockStop.setLayout(new FillLayout(SWT.HORIZONTAL));
+		
+		dateTimeLockStop = new DateTime(compositeTimeLockStop, SWT.NONE | SWT.DROP_DOWN);
+		
+		dateTimeLockStopTime = new DateTime(compositeTimeLockStop, SWT.BORDER | SWT.TIME);
+//		new Label(container, SWT.NONE);
+//		new Label(container, SWT.NONE);
+
 		Label lblLockMessage = new Label(container, SWT.NONE);
 		lblLockMessage.setText("Lock message:");
 		
-		Text txtAllowDistributeLicense = new Text(container, SWT.BORDER);
-		txtAllowDistributeLicense.setToolTipText("Database password");
-		GridData gd_txtAllowDistributeLicense = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
-		gd_txtAllowDistributeLicense.heightHint = 63;
-		txtAllowDistributeLicense.setLayoutData(gd_txtAllowDistributeLicense);
+		txtLockMessage = new Text(container, SWT.BORDER);
+		txtLockMessage.setToolTipText("Lock message");
+		GridData gd_txtLockMessage = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
+		gd_txtLockMessage.heightHint = 63;
+		txtLockMessage.setLayoutData(gd_txtLockMessage);
 		
-		lblPermissionCode = new Label(container, SWT.NONE);
+		Label lblPermissionCode = new Label(container, SWT.NONE);
 		lblPermissionCode.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblPermissionCode.setText("Permission code:");
 		
@@ -210,7 +267,7 @@ public class EditInfobaseDialog extends Dialog {
 		txtPermissionCode.setToolTipText("Permission code");
 		txtPermissionCode.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		lblLockParameter = new Label(container, SWT.NONE);
+		Label lblLockParameter = new Label(container, SWT.NONE);
 		lblLockParameter.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblLockParameter.setText("Lock parameter");
 		
@@ -222,7 +279,7 @@ public class EditInfobaseDialog extends Dialog {
 		btnSheduledJobsLock = new Button(container, SWT.CHECK);
 		btnSheduledJobsLock.setText("Sheduled jobs lock");
 		
-		lblExternalSessionManagement = new Label(container, SWT.NONE);
+		Label lblExternalSessionManagement = new Label(container, SWT.NONE);
 		lblExternalSessionManagement.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblExternalSessionManagement.setText("External session management");
 		
@@ -234,7 +291,7 @@ public class EditInfobaseDialog extends Dialog {
 		btnMandatoryUseExternalManagement = new Button(container, SWT.CHECK);
 		btnMandatoryUseExternalManagement.setText("Mandatory use of external management");
 		
-		lblSecurityProfile = new Label(container, SWT.NONE);
+		Label lblSecurityProfile = new Label(container, SWT.NONE);
 		lblSecurityProfile.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblSecurityProfile.setText("Security profile");
 		
@@ -242,7 +299,7 @@ public class EditInfobaseDialog extends Dialog {
 		txtSecurityProfile.setToolTipText("Security profile");
 		txtSecurityProfile.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		lblSafeModeSecurity = new Label(container, SWT.NONE);
+		Label lblSafeModeSecurity = new Label(container, SWT.NONE);
 		lblSafeModeSecurity.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblSafeModeSecurity.setText("Safe mode security profile");
 		
@@ -257,29 +314,53 @@ public class EditInfobaseDialog extends Dialog {
 	}
 
 	private void initServerProperties() {
-		if (serverParams != null) {
-			this.txtInfobaseName.setText(serverParams.serverHost);
-			this.txtSecureConnection.setText(serverParams.getManagerPortAsString());
-			this.txtServerDBName.setText(serverParams.getRemoteRasPortAsString());
-			this.btnSheduledJobsLock.setSelection(serverParams.useLocalRas);
-			this.comboServerDBType.setText(serverParams.localRasV8version);
-			this.txtDatabaseName.setText(serverParams.getLocalRasPortAsString());
-			this.btnSessionsLock.setSelection(serverParams.autoconnect);
+		if (infoBaseInfo != null) {
+			this.txtInfobaseName.setText(infoBaseInfo.getName());
+			this.txtPresent.setText(infoBaseInfo.getDescr());
+			this.txtSecureConnection.setText(Integer.toString(infoBaseInfo.getSecurityLevel()));
+			
+			this.txtServerDBName.setText(infoBaseInfo.getDbServerName());
+			this.comboServerDBType.setText(infoBaseInfo.getDbms());
+			this.txtDatabaseName.setText(infoBaseInfo.getDbName());
+			this.txtDatabaseLogin.setText(infoBaseInfo.getDbUser());
+			this.txtDatabasePwd.setText(infoBaseInfo.getDbPassword());
+			
+			this.btnSessionsLock.setSelection(infoBaseInfo.isSessionsDenied());
+			
+			Date deniedFrom = infoBaseInfo.getDeniedFrom();
+			Date deniedTo  	= infoBaseInfo.getDeniedTo();
+//			this.dateTimeLockStart.setDate(deniedFrom.getYear());
+//			this.dateTimeLockStartTime 	= dateTimeLockStartTime.getText();
+//			this.dateTimeLockStop  		= lockStopDateTime;
+//			this.dateTimeLockStopTime  	= lockStopTime;
+			this.txtLockMessage.setText(infoBaseInfo.getDeniedMessage());
+			this.txtPermissionCode.setText(infoBaseInfo.getPermissionCode());
+			this.txtLockParameter.setText(infoBaseInfo.getDeniedParameter());
+			
+			this.btnAllowDistributeLicense.setSelection(infoBaseInfo.isScheduledJobsDenied());
+			
+			this.txtExternalSessionManagement.setText(infoBaseInfo.getExternalSessionManagerConnectionString());
+			this.btnMandatoryUseExternalManagement.setSelection(infoBaseInfo.getExternalSessionManagerRequired());
+			
+			this.txtSecurityProfile.setText(infoBaseInfo.getSecurityProfileName());
+			this.txtSafeModeSecurityProfile.setText(infoBaseInfo.getSafeModeSecurityProfileName());
+			
+			
 		}
 	}
 
 	private void saveNewServerProperties() {
-		if (serverParams != null) {
-			serverParams.setNewServerProperties(			
-												serverHost,
-												managerPort,
-												remoteRasPort,
-												useLocalRas,
-												localRasPort,
-												localRasV8version,
-												autoconnect);
-			
-		}
+//		if (serverParams != null) {
+//			serverParams.setNewServerProperties(			
+//												infobaseName,
+//												secureConnection,
+//												remoteRasPort,
+//												useLocalRas,
+//												localRasPort,
+//												localRasV8version,
+//												autoconnect);
+//			
+//		}
 	}
 
 	/**
