@@ -9,6 +9,7 @@ import java.util.UUID;
 import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseConnectionShort;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
+import com._1c.v8.ibis.admin.IInfoBaseInfoShort;
 import com._1c.v8.ibis.admin.ISessionInfo;
 import com._1c.v8.ibis.admin.client.AgentAdminConnectorFactory;
 import com.google.gson.annotations.Expose;
@@ -264,7 +265,7 @@ public class Config {
 			
 	    }
 	    
-	    public List<ISessionInfo> getInfoBaseSessions(IInfoBaseInfo ibs)
+	    public List<ISessionInfo> getInfoBaseSessions(IInfoBaseInfoShort ibs)
 	    {
 	    	List<ISessionInfo> sessions = new ArrayList<>();
 			if (!clusterConnector.isConnected())
