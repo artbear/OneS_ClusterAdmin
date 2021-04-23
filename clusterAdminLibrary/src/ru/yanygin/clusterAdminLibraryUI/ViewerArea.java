@@ -33,6 +33,8 @@ import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfoShort;
 import com._1c.v8.ibis.admin.ISessionInfo;
 import com._1c.v8.ibis.admin.InfoBaseInfo;
+import com._1c.v8.ibis.admin.InfoBaseInfoShort;
+
 import ru.yanygin.clusterAdminLibrary.ClusterProvider;
 import ru.yanygin.clusterAdminLibrary.Config.Server;
 
@@ -170,7 +172,7 @@ public class ViewerArea extends Composite {
 		serversTree.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
-				
+
 				// нужно сделать, что бы была реакция только на левый клик мышью!
 
 				tableSessions.removeAll();
@@ -201,7 +203,7 @@ public class ViewerArea extends Composite {
 					serversTree.setMenu(databaseMenu);
 
 					serverConfig = (Server) serverItem.getParentItem().getData("ServerConfig");
-					infoBaseInfo = (IInfoBaseInfoShort) serverItem.getData("IInfoBaseInfoShort");
+					infoBaseInfo = (IInfoBaseInfoShort) serverItem.getData("InfoBaseInfoShort");
 					
 					sessions = serverConfig.getInfoBaseSessions(infoBaseInfo);
 					connections = serverConfig.getConnections();//null;//;
@@ -223,8 +225,12 @@ public class ViewerArea extends Composite {
 			private void addSessionInTable(Server serverConfig, IInfoBaseInfoShort infoBaseInfo, ISessionInfo session) {
 				TableItem sessionItem = new TableItem(tableSessions, SWT.NONE);
 
-				String infobaseName = infoBaseInfo.getName();
-//				String infobaseName = serverConfig.getInfoBaseName(session.getInfoBaseId());
+				String infobaseName = "";
+				if (infoBaseInfo == null) {
+					infobaseName = serverConfig.getInfoBaseName(session.getInfoBaseId());
+				} else {
+					infobaseName = infoBaseInfo.getName();
+				}
 
 				String[] itemText = { session.getAppId(),
 									session.getConnectionId().toString(),
@@ -239,15 +245,21 @@ public class ViewerArea extends Composite {
 				sessionItem.setText(itemText);
 				sessionItem.setData("SessionInfo", session);
 				sessionItem.setData("ServerConfig", serverConfig);
-				sessionItem.setData("IInfoBaseInfoShort", infoBaseInfo);
+				sessionItem.setData("InfoBaseInfoShort", infoBaseInfo);
 				sessionItem.setChecked(false);
 			}
 			
 			private void addConnectionInTable(Server serverConfig, IInfoBaseInfoShort infoBaseInfo, IInfoBaseConnectionShort connection) {
 				TableItem connectionItem = new TableItem(tableConnections, SWT.NONE);
 
-				String infobaseName = infoBaseInfo.getName();
+//				String infobaseName = infoBaseInfo.getName();
 //				String infobaseName = serverConfig.getInfoBaseName(connection.getInfoBaseId());
+				String infobaseName = "";
+				if (infoBaseInfo == null) {
+					infobaseName = serverConfig.getInfoBaseName(connection.getInfoBaseId());
+				} else {
+					infobaseName = infoBaseInfo.getName();
+				}
 
 				String[] itemText = { connection.getApplication(),
 									Integer.toString(connection.getConnId()),
@@ -261,7 +273,7 @@ public class ViewerArea extends Composite {
 				connectionItem.setText(itemText);
 				connectionItem.setData("Connection", connection);
 				connectionItem.setData("ServerConfig", serverConfig);
-				connectionItem.setData("IInfoBaseInfoShort", infoBaseInfo);
+				connectionItem.setData("InfoBaseInfoShort", infoBaseInfo);
 				connectionItem.setChecked(false);
 			}
 
@@ -365,9 +377,9 @@ public class ViewerArea extends Composite {
 				if (item.length == 0)
 					return;
 				
-				Server serverConfig = (Server) item[0].getData("ServerConfig");
+				Server server = (Server) item[0].getData("ServerConfig");
 				
-				clusterProvider.removeServerInList(serverConfig);
+				clusterProvider.removeServerInList(server);
 				
 				item[0].dispose();
 			}
@@ -384,11 +396,13 @@ public class ViewerArea extends Composite {
 				if (item.length == 0)
 					return;
 				
-				InfoBaseInfo infoBaseInfo = (InfoBaseInfo) item[0].getData("InfoBaseInfo");
+				Server server = (Server) item[0].getParentItem().getData("ServerConfig");
+				IInfoBaseInfoShort infoBaseInfoShort = (IInfoBaseInfoShort) item[0].getData("InfoBaseInfoShort");
 				
+				IInfoBaseInfo infoBaseInfo = server.clusterConnector.getInfoBaseInfo(server.clusterID, infoBaseInfoShort.getInfoBaseId());
 				EditInfobaseDialog infobaseDialog;
 				try {
-				infobaseDialog = new EditInfobaseDialog(getParent().getDisplay().getActiveShell(), infoBaseInfo);
+				infobaseDialog = new EditInfobaseDialog(getParent().getDisplay().getActiveShell(), infoBaseInfo, server);
 				} catch (Exception excp) {
 					excp.printStackTrace();
 					return;
@@ -396,7 +410,7 @@ public class ViewerArea extends Composite {
 				
 				int dialogResult = infobaseDialog.open();
 				if (dialogResult == 0) {
-					
+//					server.clusterConnector.updateInfoBase(server.clusterID, infoBaseInfo);
 				}
 			}
 		});

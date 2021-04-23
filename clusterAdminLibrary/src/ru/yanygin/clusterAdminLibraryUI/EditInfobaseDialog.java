@@ -1,5 +1,6 @@
 package ru.yanygin.clusterAdminLibraryUI;
 
+import java.util.Calendar;
 import java.util.Date;
 
 import org.eclipse.jface.dialogs.Dialog;
@@ -10,8 +11,10 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.InfoBaseInfo;
 
+import ru.yanygin.clusterAdminLibrary.ClusterConnector;
 import ru.yanygin.clusterAdminLibrary.Config.Server;
 
 import org.eclipse.swt.SWT;
@@ -32,16 +35,20 @@ import org.eclipse.swt.widgets.DateTime;
 
 public class EditInfobaseDialog extends Dialog {
 	
+	private IInfoBaseInfo infoBaseInfo;
+	private Server server;
+	// Controls
 	private Button btnSessionsLock;
 	private Button btnSheduledJobsLock;
 	private Button btnAllowDistributeLicense;
 	private Button btnMandatoryUseExternalManagement;
 	private Text txtInfobaseName;
-	private Text txtSecureConnection;
 	private Text txtServerDBName;
 	private Text txtDatabaseName;
-	private Text txtPresent;
 	private Text txtDatabaseLogin;
+	private Text txtDatabasePwd;
+	private Text txtInfobaseDescription;
+	private Text txtSecureConnection;
 	private Text txtPermissionCode;
 	private Text txtLockParameter;
 	private Text txtExternalSessionManagement;
@@ -53,16 +60,14 @@ public class EditInfobaseDialog extends Dialog {
 	private DateTime dateTimeLockStartTime;
 	private DateTime dateTimeLockStop;
 	private DateTime dateTimeLockStopTime;
-	private Text txtDatabasePwd;
-	
-	private InfoBaseInfo infoBaseInfo;
 
+	// fields of infobase
 	private String infobaseName;
-	private String infobasePresent;
+	private String infobaseDescription;
 	private String secureConnection;
 	
 	private String serverDBName;
-	private String serverDBType; // MSSQLServer, PostgreSQL
+	private String serverDBType; // MSSQLServer, PostgreSQL, (?IBM DB2), (?Oracle Database)
 	private String databaseName;
 	private String databaseLogin;
 	private String databasePwd;
@@ -70,9 +75,9 @@ public class EditInfobaseDialog extends Dialog {
 	private boolean allowDistributeLicense;
 	
 	private boolean sessionsLock;
-	private String lockStartDateTime;
+	private Date deniedFrom;
 //	private String lockStartTime;
-	private String lockStopDateTime;
+	private Date deniedTo;
 //	private String lockStopTime;
 	private String lockMessage;
 	private String permissionCode;
@@ -92,11 +97,13 @@ public class EditInfobaseDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public EditInfobaseDialog(Shell parentShell, InfoBaseInfo infoBaseInfo) {
+	public EditInfobaseDialog(Shell parentShell, IInfoBaseInfo infoBaseInfo, Server server) {
 		super(parentShell);
+		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 
 		this.infoBaseInfo = infoBaseInfo;
+		this.server = server;
 	}
 
 	/**
@@ -107,43 +114,7 @@ public class EditInfobaseDialog extends Dialog {
 	protected Control createDialogArea(Composite parent) {
 		parent.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
-				infobaseName 		= txtInfobaseName.getText();
-				infobasePresent 	= txtPresent.getText();
-				secureConnection 	= txtSecureConnection.getText();
-				
-				serverDBName 	= txtServerDBName.getText();
-				serverDBType 	= comboServerDBType.getText();
-				databaseName 	= txtDatabaseName.getText();
-				databaseLogin 	= txtDatabaseLogin.getText();
-				databasePwd 	= txtDatabasePwd.getText();
-				
-				allowDistributeLicense 	= btnAllowDistributeLicense.getSelection();
-				
-				sessionsLock 	= btnSessionsLock.getSelection();
-				lockStartDateTime 	= convertDateTime(dateTimeLockStart, dateTimeLockStartTime);
-//				lockStartTime 	= dateTimeLockStartTime.getText();
-				lockStopDateTime 	= convertDateTime(dateTimeLockStop, dateTimeLockStopTime);
-//				lockStopTime 	= dateTimeLockStopTime.getText();
-				lockMessage 	= txtLockMessage.getText();
-				permissionCode 	= txtPermissionCode.getText();
-				lockParameter 	= txtLockParameter.getText();
-				
-				sheduledJobsLock = btnSheduledJobsLock.getSelection();
-				
-				externalSessionManagement 		= txtExternalSessionManagement.getText();
-				mandatoryUseExternalManagement 	= btnMandatoryUseExternalManagement.getSelection();
-				
-				securityProfile 		= txtSecurityProfile.getText();
-				safeModeSecurityProfile = txtSafeModeSecurityProfile.getText();
-
-			}
-
-			private String convertDateTime(DateTime date, DateTime time) {
-				String dateTimeString = "";
-				
-				int year = date.getYear();
-				
-				return Integer.toString(year);
+				extractInfobaseVariables();
 			}
 		});
 		Composite container = (Composite) super.createDialogArea(parent);
@@ -163,9 +134,9 @@ public class EditInfobaseDialog extends Dialog {
 //		lblPresent.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblPresent.setText("Present");
 		
-		txtPresent = new Text(container, SWT.BORDER);
-		txtPresent.setToolTipText("Present");
-		txtPresent.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtInfobaseDescription = new Text(container, SWT.BORDER);
+		txtInfobaseDescription.setToolTipText("Present");
+		txtInfobaseDescription.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblSecureConnection = new Label(container, SWT.NONE);
 		lblSecureConnection.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
@@ -316,7 +287,7 @@ public class EditInfobaseDialog extends Dialog {
 	private void initServerProperties() {
 		if (infoBaseInfo != null) {
 			this.txtInfobaseName.setText(infoBaseInfo.getName());
-			this.txtPresent.setText(infoBaseInfo.getDescr());
+			this.txtInfobaseDescription.setText(infoBaseInfo.getDescr());
 			this.txtSecureConnection.setText(Integer.toString(infoBaseInfo.getSecurityLevel()));
 			
 			this.txtServerDBName.setText(infoBaseInfo.getDbServerName());
@@ -327,12 +298,14 @@ public class EditInfobaseDialog extends Dialog {
 			
 			this.btnSessionsLock.setSelection(infoBaseInfo.isSessionsDenied());
 			
-			Date deniedFrom = infoBaseInfo.getDeniedFrom();
+			Date deniedFrom = infoBaseInfo.getDeniedFrom();//deniedFrom.
 			Date deniedTo  	= infoBaseInfo.getDeniedTo();
-//			this.dateTimeLockStart.setDate(deniedFrom.getYear());
-//			this.dateTimeLockStartTime 	= dateTimeLockStartTime.getText();
-//			this.dateTimeLockStop  		= lockStopDateTime;
-//			this.dateTimeLockStopTime  	= lockStopTime;
+
+			this.dateTimeLockStart.setDate(1900 + deniedFrom.getYear(), deniedFrom.getMonth(), deniedFrom.getDate());
+			this.dateTimeLockStartTime.setTime(deniedFrom.getHours(), deniedFrom.getMinutes(), deniedFrom.getSeconds());
+			this.dateTimeLockStop.setDate(1900 + deniedTo.getYear(), deniedTo.getMonth(), deniedTo.getDate());
+			this.dateTimeLockStopTime.setTime(deniedTo.getHours(), deniedTo.getMinutes(), deniedTo.getSeconds());
+			
 			this.txtLockMessage.setText(infoBaseInfo.getDeniedMessage());
 			this.txtPermissionCode.setText(infoBaseInfo.getPermissionCode());
 			this.txtLockParameter.setText(infoBaseInfo.getDeniedParameter());
@@ -350,19 +323,122 @@ public class EditInfobaseDialog extends Dialog {
 	}
 
 	private void saveNewServerProperties() {
-//		if (serverParams != null) {
-//			serverParams.setNewServerProperties(			
-//												infobaseName,
-//												secureConnection,
-//												remoteRasPort,
-//												useLocalRas,
-//												localRasPort,
-//												localRasV8version,
-//												autoconnect);
-//			
-//		}
+		if (infoBaseInfo != null) {
+			
+			// Common Section
+			if (infobaseName != infoBaseInfo.getName())
+				infoBaseInfo.setName(infobaseName);
+			
+			if (infobaseDescription != infoBaseInfo.getDescr())
+				infoBaseInfo.setDescr(infobaseDescription);
+			
+//			if (allowDistributeLicense != infoBaseInfo.getLicenseDistributionAllowed())
+//				infoBaseInfo.setLicenseDistributionAllowed(allowDistributeLicense);
+			
+			if (sheduledJobsLock != infoBaseInfo.isScheduledJobsDenied())
+				infoBaseInfo.setScheduledJobsDenied(sheduledJobsLock);
+			
+//			if (secureConnection != infoBaseInfo.getSecurityLevel()) // не меняется
+//				infoBaseInfo.se(secureConnection);
+			
+			// DB Section
+			if (serverDBName != infoBaseInfo.getDbServerName())
+				infoBaseInfo.setDbServerName(serverDBName);
+			
+			if (serverDBType != infoBaseInfo.getDbms())
+				infoBaseInfo.setDbms(serverDBType);
+			
+			if (databaseName != infoBaseInfo.getDbName())
+				infoBaseInfo.setDbName(databaseName);
+			
+			if (databaseLogin != infoBaseInfo.getDbUser())
+				infoBaseInfo.setDbUser(databaseLogin);
+			
+			if (databasePwd != infoBaseInfo.getDbPassword())
+				infoBaseInfo.setDbPassword(databasePwd);
+			
+			// Lock Section
+			if (sessionsLock != infoBaseInfo.isSessionsDenied())
+				infoBaseInfo.setSessionsDenied(sessionsLock);
+			
+			if (deniedFrom != infoBaseInfo.getDeniedFrom())
+				infoBaseInfo.setDeniedFrom(deniedFrom);
+			
+			if (deniedTo != infoBaseInfo.getDeniedTo())
+				infoBaseInfo.setDeniedTo(deniedTo);
+			
+			if (lockMessage != infoBaseInfo.getDeniedMessage())
+				infoBaseInfo.setDeniedMessage(lockMessage);
+			
+			if (permissionCode != infoBaseInfo.getDeniedMessage())
+				infoBaseInfo.setDeniedMessage(permissionCode);
+			
+			if (lockParameter != infoBaseInfo.getDeniedParameter())
+				infoBaseInfo.setDeniedParameter(lockParameter);
+			
+			// ExternalSessionManager Section
+			if (externalSessionManagement != infoBaseInfo.getExternalSessionManagerConnectionString())
+				infoBaseInfo.setExternalSessionManagerConnectionString(externalSessionManagement);
+			
+			if (mandatoryUseExternalManagement != infoBaseInfo.getExternalSessionManagerRequired())
+				infoBaseInfo.setExternalSessionManagerRequired(mandatoryUseExternalManagement);
+			
+			// SecurityProfile Section			
+			if (securityProfile != infoBaseInfo.getSecurityProfileName())
+				infoBaseInfo.setSecurityProfileName(securityProfile);
+			
+			if (safeModeSecurityProfile != infoBaseInfo.getSafeModeSecurityProfileName())
+				infoBaseInfo.setSafeModeSecurityProfileName(safeModeSecurityProfile);
+			
+			
+			server.clusterConnector.updateInfoBase(server.clusterID, infoBaseInfo);
+			
+		}
 	}
 
+	private void extractInfobaseVariables() {
+		infobaseName 		= txtInfobaseName.getText();
+		infobaseDescription = txtInfobaseDescription.getText();
+		secureConnection 	= txtSecureConnection.getText();
+		
+		serverDBName 	= txtServerDBName.getText();
+		serverDBType 	= comboServerDBType.getText();
+		databaseName 	= txtDatabaseName.getText();
+		databaseLogin 	= txtDatabaseLogin.getText();
+		databasePwd 	= txtDatabasePwd.getText();
+		
+		allowDistributeLicense 	= btnAllowDistributeLicense.getSelection();
+		
+		sessionsLock 	= btnSessionsLock.getSelection();
+		deniedFrom 	= convertDateTime(dateTimeLockStart, dateTimeLockStartTime);
+//		lockStartTime 	= dateTimeLockStartTime.getText();
+		deniedTo 	= convertDateTime(dateTimeLockStop, dateTimeLockStopTime);
+//		lockStopTime 	= dateTimeLockStopTime.getText();
+		lockMessage 	= txtLockMessage.getText();
+		permissionCode 	= txtPermissionCode.getText();
+		lockParameter 	= txtLockParameter.getText();
+		
+		sheduledJobsLock = btnSheduledJobsLock.getSelection();
+		
+		externalSessionManagement 		= txtExternalSessionManagement.getText();
+		mandatoryUseExternalManagement 	= btnMandatoryUseExternalManagement.getSelection();
+		
+		securityProfile 		= txtSecurityProfile.getText();
+		safeModeSecurityProfile = txtSafeModeSecurityProfile.getText();
+	}
+
+	private Date convertDateTime(DateTime date, DateTime time) {
+		
+		int year = date.getYear() - 1900; // чтото не так с конвертацией
+		int month = date.getMonth();
+		int day = date.getDay();
+		int hrs = time.getHours();
+		int min = time.getMinutes();
+		int sec = time.getSeconds();
+
+		return new Date(year, month, day, hrs, min, sec);
+	}
+	
 	/**
 	 * Create contents of the button bar.
 	 * @param parent
@@ -376,7 +452,17 @@ public class EditInfobaseDialog extends Dialog {
 				saveNewServerProperties();
 			}
 		});
+		
 		createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
+		
+		Button buttonPr = createButton(parent, IDialogConstants.PROCEED_ID, "Apply", false);
+		buttonPr.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				extractInfobaseVariables();
+				saveNewServerProperties();
+			}
+		});
 	}
 
 	/**
