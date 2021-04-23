@@ -9,8 +9,10 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Device;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -27,6 +29,7 @@ import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.wb.swt.SWTResourceManager;
 
 import com._1c.v8.ibis.admin.IInfoBaseConnectionShort;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
@@ -69,6 +72,9 @@ public class ViewerArea extends Composite {
 		SashForm sashForm = new SashForm(this, SWT.NONE);
 		
 		initIcon();
+		
+//		toolBar = new ToolBar(this, SWT.FLAT | SWT.RIGHT); // Для отладки
+//		toolBar.setBounds(0, 0, 500, 23); // Для отладки
 		
 		initToolbar(parent, toolBar, clusterProvider);
 		
@@ -175,25 +181,23 @@ public class ViewerArea extends Composite {
 
 				// нужно сделать, что бы была реакция только на левый клик мышью!
 
-				tableSessions.removeAll();
-				tableConnections.removeAll();
-
 				TreeItem[] item = serversTree.getSelection();
 				if (item.length == 0)
 					return;
 				
 //				TreeItem serverItem = item[0];
-				TreeItem serverItem = (TreeItem) event.item;
+				TreeItem treeItem = (TreeItem) event.item;
+				
 				Server serverConfig;
 				IInfoBaseInfoShort infoBaseInfo;
 				List<ISessionInfo> sessions;
 				List<IInfoBaseConnectionShort> connections;
-
-				switch ((String) serverItem.getData("Type")) {
+				
+				switch ((String) treeItem.getData("Type")) {
 				case "Server":
 					serversTree.setMenu(serversMenu);
 
-					serverConfig = (Server) serverItem.getData("ServerConfig");
+					serverConfig = (Server) treeItem.getData("ServerConfig");
 					infoBaseInfo = null;
 					
 					sessions = serverConfig.getSessions();
@@ -202,8 +206,8 @@ public class ViewerArea extends Composite {
 				case "Infobase":
 					serversTree.setMenu(databaseMenu);
 
-					serverConfig = (Server) serverItem.getParentItem().getData("ServerConfig");
-					infoBaseInfo = (IInfoBaseInfoShort) serverItem.getData("InfoBaseInfoShort");
+					serverConfig = (Server) treeItem.getParentItem().getData("ServerConfig");
+					infoBaseInfo = (IInfoBaseInfoShort) treeItem.getData("InfoBaseInfoShort");
 					
 					sessions = serverConfig.getInfoBaseSessions(infoBaseInfo);
 					connections = serverConfig.getConnections();//null;//;
@@ -213,10 +217,12 @@ public class ViewerArea extends Composite {
 //					break;
 				}
 
+				tableSessions.removeAll();
 				sessions.forEach(session -> {
 					addSessionInTable(serverConfig, infoBaseInfo, session);
 				});
 
+				tableConnections.removeAll();
 				connections.forEach(connection -> {
 					addConnectionInTable(serverConfig, infoBaseInfo, connection);
 				});
@@ -295,6 +301,55 @@ public class ViewerArea extends Composite {
 		serversMenu = new Menu(serversTree);
 		serversTree.setMenu(serversMenu);
 
+		MenuItem menuItemConnectServer = new MenuItem(serversMenu, SWT.NONE);
+		menuItemConnectServer.setText("Connect to Server");
+		menuItemConnectServer.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+
+				TreeItem[] item = serversTree.getSelection();
+				if (item.length == 0)
+					return;
+				TreeItem serverItem = item[0];
+				Server serverConfig = (Server) serverItem.getData("ServerConfig");
+
+//				serverItem.setText(new String[] { serverConfig.getServerPresent() });
+//				clusterProvider.saveKnownServers();
+
+				if (serverConfig.connect(false)) {
+					serverItem.setImage(serverIconUp);
+					fillInfobaseOfServer(serverItem, serverConfig);
+				} else {
+					serverItem.setImage(serverIconDown);
+				}
+
+			}
+		});
+		
+		MenuItem menuItemSisconnectServer = new MenuItem(serversMenu, SWT.NONE);
+		menuItemSisconnectServer.setText("Disconnect of Server"); // Disconnect of Server??? - проверить написание
+		menuItemSisconnectServer.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+
+				TreeItem[] item = serversTree.getSelection();
+				if (item.length == 0)
+					return;
+				TreeItem serverItem = item[0];
+				Server serverConfig = (Server) serverItem.getData("ServerConfig");
+
+//				serverItem.setText(new String[] { serverConfig.getServerPresent() });
+//				clusterProvider.saveKnownServers();
+
+				if (serverConfig.disconnect()) {
+					serverItem.setImage(serverIconDown);
+				} else {
+					serverItem.setImage(serverIcon);
+				}
+
+			}
+		});
+		
 		MenuItem menuItemAddNewServer = new MenuItem(serversMenu, SWT.NONE);
 		menuItemAddNewServer.setText("Add Server");
 		menuItemAddNewServer.addSelectionListener(new SelectionAdapter() {
@@ -423,7 +478,12 @@ public class ViewerArea extends Composite {
 	}
 	
 	private void fillInfobaseOfServer(TreeItem serverItem, Server serverConfig) {
-		
+		// Удалить все базы из списка
+		TreeItem[] ibItems = serverItem.getItems();
+		for (TreeItem treeItem : ibItems) {
+			treeItem.dispose();
+		}
+
 		//debug
 //		List<IInfoBaseInfo> infoBases = serverConfig.getInfoBases();
 		List<IInfoBaseInfoShort> infoBases = serverConfig.clusterConnector.getInfoBasesShort(serverConfig.clusterID); // краткая инфа - ID, имя, описание
@@ -434,8 +494,8 @@ public class ViewerArea extends Composite {
 		infoBases.forEach(infoBaseInfo-> {
 			
 			//debug
-			IInfoBaseInfo infoBasesInfo = serverConfig.clusterConnector.getInfoBaseInfo(serverConfig.clusterID, infoBaseInfo.getInfoBaseId());
-			IInfoBaseInfoShort infoBasesShortInfo = serverConfig.clusterConnector.getInfoBaseShortInfo(serverConfig.clusterID, infoBaseInfo.getInfoBaseId());
+//			IInfoBaseInfo infoBasesInfo = serverConfig.clusterConnector.getInfoBaseInfo(serverConfig.clusterID, infoBaseInfo.getInfoBaseId());
+//			IInfoBaseInfoShort infoBasesShortInfo = serverConfig.clusterConnector.getInfoBaseShortInfo(serverConfig.clusterID, infoBaseInfo.getInfoBaseId());
 			//debug
 			
 			addInfobaseItemInServersTree(serverItem, infoBaseInfo);
@@ -539,6 +599,8 @@ public class ViewerArea extends Composite {
 					return;
 				
 				for (TableItem item : selectedItems) {
+					item.setForeground(new Color(150,0,0));
+					
 					ISessionInfo sessionInfo = (ISessionInfo) item.getData("SessionInfo");
 					Server server = (Server) item.getData("ServerConfig");
 					server.terminateSession(sessionInfo.getSid());

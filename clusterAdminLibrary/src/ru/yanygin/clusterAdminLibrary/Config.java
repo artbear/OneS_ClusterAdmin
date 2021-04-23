@@ -220,6 +220,7 @@ public class Config {
 			try {
 				clusterConnector.connect(serverHost, rasPort, 20);
 				available = true;
+				System.out.println("Server ".concat(getServerPresent()).concat(" is connected now"));
 				
 				if (disconnectAfter) {
 					clusterConnector.disconnect();	
@@ -230,12 +231,30 @@ public class Config {
 				clusterID = clusterInfoList.get(0).getClusterId();
 				clusterConnector.authenticateCluster(clusterID, "", "");
 				
-				System.out.println("Server ".concat(getServerPresent()).concat(" is connected"));
 			}
 			catch (Exception e) {
 				available = false;
 				
-				System.out.println("Server ".concat(getServerPresent()).concat(" NOT connected"));
+				System.out.println("Server ".concat(getServerPresent()).concat(" connect error"));
+				return false;
+			}
+			return true;
+
+		}
+
+		public boolean disconnect() {
+			
+			if (!clusterConnector.isConnected()) {
+				System.out.println("Server ".concat(getServerPresent()).concat(" is not connected"));
+				return true;
+			}
+			
+			try {
+				clusterConnector.disconnect();	
+				System.out.println("Server ".concat(getServerPresent()).concat(" disconnected now"));
+			}
+			catch (Exception excp) {
+				System.out.println("Server ".concat(getServerPresent()).concat(" disconnect error").concat(excp.getMessage()));
 				return false;
 			}
 			return true;

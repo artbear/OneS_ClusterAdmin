@@ -38,28 +38,28 @@ public class EditInfobaseDialog extends Dialog {
 	private IInfoBaseInfo infoBaseInfo;
 	private Server server;
 	// Controls
-	private Button btnSessionsLock;
-	private Button btnSheduledJobsLock;
+	private Button btnSessionsDenied;
+	private Button btnSheduledJobsDenied;
 	private Button btnAllowDistributeLicense;
-	private Button btnMandatoryUseExternalManagement;
+	private Button btnExternalSessionManagerRequired;
 	private Text txtInfobaseName;
 	private Text txtServerDBName;
-	private Text txtDatabaseName;
-	private Text txtDatabaseLogin;
-	private Text txtDatabasePwd;
+	private Text txtDatabaseDbName;
+	private Text txtDatabaseDbUser;
+	private Text txtDatabaseDbPassword;
 	private Text txtInfobaseDescription;
-	private Text txtSecureConnection;
+	private Text txtSecurityLevel;
 	private Text txtPermissionCode;
-	private Text txtLockParameter;
-	private Text txtExternalSessionManagement;
+	private Text txtDeniedParameter;
+	private Text txtExternalSessionManagerConnectionString;
 	private Text txtSecurityProfile;
 	private Text txtSafeModeSecurityProfile;
-	private Text txtLockMessage;
+	private Text txtDeniedMessage;
 	private Combo comboServerDBType;
-	private DateTime dateTimeLockStart;
-	private DateTime dateTimeLockStartTime;
-	private DateTime dateTimeLockStop;
-	private DateTime dateTimeLockStopTime;
+	private DateTime deniedFromDate;
+	private DateTime deniedFromTime;
+	private DateTime deniedToDate;
+	private DateTime deniedToTime;
 
 	// fields of infobase
 	private String infobaseName;
@@ -68,25 +68,25 @@ public class EditInfobaseDialog extends Dialog {
 	
 	private String serverDBName;
 	private String serverDBType; // MSSQLServer, PostgreSQL, (?IBM DB2), (?Oracle Database)
-	private String databaseName;
-	private String databaseLogin;
-	private String databasePwd;
+	private String databaseDbName;
+	private String databaseDbUser;
+	private String databaseDbPassword;
 	
-	private boolean allowDistributeLicense;
+	private int allowDistributeLicense;
 	
-	private boolean sessionsLock;
-	private Date deniedFrom;
+	private boolean sessionsDenied;
+	private Date sessionsDeniedFrom;
 //	private String lockStartTime;
-	private Date deniedTo;
+	private Date sessionsDeniedTo;
 //	private String lockStopTime;
-	private String lockMessage;
+	private String deniedMessage;
 	private String permissionCode;
-	private String lockParameter;
+	private String deniedParameter;
 	
-	private boolean sheduledJobsLock;
+	private boolean sheduledJobsDenied;
 	
-	private String externalSessionManagement;
-	private boolean mandatoryUseExternalManagement;
+	private String externalSessionManagerConnectionString;
+	private boolean externalSessionManagerRequired;
 	
 	private String securityProfile;
 	private String safeModeSecurityProfile;
@@ -114,7 +114,7 @@ public class EditInfobaseDialog extends Dialog {
 	protected Control createDialogArea(Composite parent) {
 		parent.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
-				extractInfobaseVariables();
+				extractInfobaseVariablesFromControls();
 			}
 		});
 		Composite container = (Composite) super.createDialogArea(parent);
@@ -129,24 +129,24 @@ public class EditInfobaseDialog extends Dialog {
 		txtInfobaseName.setToolTipText("Infobase name");
 		txtInfobaseName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		Label lblPresent = new Label(container, SWT.NONE);
-		lblPresent.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-//		lblPresent.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblPresent.setText("Present");
+		Label lblInfobaseDescription = new Label(container, SWT.NONE);
+		lblInfobaseDescription.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblInfobaseDescription.setText("Description");
 		
 		txtInfobaseDescription = new Text(container, SWT.BORDER);
-		txtInfobaseDescription.setToolTipText("Present");
+		txtInfobaseDescription.setToolTipText("Description");
 		txtInfobaseDescription.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		Label lblSecureConnection = new Label(container, SWT.NONE);
-		lblSecureConnection.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblSecureConnection.setToolTipText("");
-		lblSecureConnection.setText("Secure connection");
+		Label lblSecurityLevel = new Label(container, SWT.NONE);
+		lblSecurityLevel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+//		lblSecurityLevel.setToolTipText("");
+		lblSecurityLevel.setText("Security level");
 		
-		txtSecureConnection = new Text(container, SWT.BORDER);
-		txtSecureConnection.setTouchEnabled(true);
-		txtSecureConnection.setToolTipText("Secure connection");
-		txtSecureConnection.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtSecurityLevel = new Text(container, SWT.BORDER);
+		txtSecurityLevel.setEditable(false);
+		txtSecurityLevel.setTouchEnabled(true);
+		txtSecurityLevel.setToolTipText("Security level");
+		txtSecurityLevel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblServerDBName = new Label(container, SWT.NONE);
 		lblServerDBName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
@@ -158,77 +158,75 @@ public class EditInfobaseDialog extends Dialog {
 		
 		Label lblServerDBType = new Label(container, SWT.NONE);
 		lblServerDBType.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblServerDBType.setText("Server DB type");
+		lblServerDBType.setText("DBMS type");
 		
 		comboServerDBType = new Combo(container, SWT.NONE);
+		comboServerDBType.setItems(new String[] {"MSSQLServer", "PostgreSQL", "(?IBM DB2)", "(?Oracle Database)"});
 		comboServerDBType.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		Label lblDatabaseName = new Label(container, SWT.NONE);
-		lblDatabaseName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblDatabaseName.setText("Database name");
+		Label lblDatabaseDbName = new Label(container, SWT.NONE);
+		lblDatabaseDbName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblDatabaseDbName.setText("Database DB name");
 		
-		txtDatabaseName = new Text(container, SWT.BORDER);
-		txtDatabaseName.setToolTipText("Database name");
-		txtDatabaseName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtDatabaseDbName = new Text(container, SWT.BORDER);
+		txtDatabaseDbName.setToolTipText("Database DB name");
+		txtDatabaseDbName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		Label lblDatabaseLogin = new Label(container, SWT.NONE);
-		lblDatabaseLogin.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblDatabaseLogin.setText("Database login");
+		Label lblDatabaseDbUser = new Label(container, SWT.NONE);
+		lblDatabaseDbUser.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblDatabaseDbUser.setText("Database DB user");
 		
-		txtDatabaseLogin = new Text(container, SWT.BORDER);
-		txtDatabaseLogin.setToolTipText("Database login");
-		txtDatabaseLogin.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtDatabaseDbUser = new Text(container, SWT.BORDER);
+		txtDatabaseDbUser.setToolTipText("Database DB user");
+		txtDatabaseDbUser.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		Label lblDatabasePwd = new Label(container, SWT.NONE);
-		lblDatabasePwd.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblDatabasePwd.setAlignment(SWT.RIGHT);
-		lblDatabasePwd.setText("Database password");
+		Label lblDatabaseDbPassword = new Label(container, SWT.NONE);
+		lblDatabaseDbPassword.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblDatabaseDbPassword.setAlignment(SWT.RIGHT);
+		lblDatabaseDbPassword.setText("Database DB password");
 		
-		txtDatabasePwd = new Text(container, SWT.BORDER | SWT.PASSWORD);
-		txtDatabasePwd.setToolTipText("Database password");
-		txtDatabasePwd.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtDatabaseDbPassword = new Text(container, SWT.BORDER | SWT.PASSWORD);
+		txtDatabaseDbPassword.setToolTipText("Database DB password");
+		txtDatabaseDbPassword.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		new Label(container, SWT.NONE);
 		
 		btnAllowDistributeLicense = new Button(container, SWT.CHECK);
-		btnAllowDistributeLicense.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		btnAllowDistributeLicense.setText("Allow distribute license at 1C:Enterprise server");
 		new Label(container, SWT.NONE);
 		
-		btnSessionsLock = new Button(container, SWT.CHECK);
-		btnSessionsLock.setText("Sessions lock");
+		btnSessionsDenied = new Button(container, SWT.CHECK);
+		btnSessionsDenied.setText("Sessions denied");
 		
-		Label lblSessionsLockStart = new Label(container, SWT.NONE);
-		lblSessionsLockStart.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblSessionsLockStart.setText("Lock start:");
+		Label lblDeniedFrom = new Label(container, SWT.NONE);
+		lblDeniedFrom.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblDeniedFrom.setText("Denied from:");
 		
-		Composite compositeTimeLockStart = new Composite(container, SWT.NONE);
-		compositeTimeLockStart.setLayout(new FillLayout(SWT.HORIZONTAL));
+		Composite compositeDeniedFrom = new Composite(container, SWT.NONE);
+		compositeDeniedFrom.setLayout(new FillLayout(SWT.HORIZONTAL));
 		
-		dateTimeLockStart = new DateTime(compositeTimeLockStart, SWT.BORDER | SWT.DATE | SWT.DROP_DOWN);
+		deniedFromDate = new DateTime(compositeDeniedFrom, SWT.BORDER | SWT.DATE | SWT.DROP_DOWN);
 		
-		dateTimeLockStartTime = new DateTime(compositeTimeLockStart, SWT.BORDER | SWT.TIME);
+		deniedFromTime = new DateTime(compositeDeniedFrom, SWT.BORDER | SWT.TIME);
 		
-		Label lblSessionsLockStop = new Label(container, SWT.NONE);
-		lblSessionsLockStop.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblSessionsLockStop.setText("Lock stop:");
+		Label lblDeniedTo = new Label(container, SWT.NONE);
+		lblDeniedTo.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblDeniedTo.setText("Denied to:");
 		
-		Composite compositeTimeLockStop = new Composite(container, SWT.NONE);
-		compositeTimeLockStop.setLayout(new FillLayout(SWT.HORIZONTAL));
+		Composite compositeDeniedTo = new Composite(container, SWT.NONE);
+		compositeDeniedTo.setLayout(new FillLayout(SWT.HORIZONTAL));
 		
-		dateTimeLockStop = new DateTime(compositeTimeLockStop, SWT.NONE | SWT.DROP_DOWN);
+		deniedToDate = new DateTime(compositeDeniedTo, SWT.NONE | SWT.DROP_DOWN);
 		
-		dateTimeLockStopTime = new DateTime(compositeTimeLockStop, SWT.BORDER | SWT.TIME);
-//		new Label(container, SWT.NONE);
-//		new Label(container, SWT.NONE);
+		deniedToTime = new DateTime(compositeDeniedTo, SWT.BORDER | SWT.TIME);
 
-		Label lblLockMessage = new Label(container, SWT.NONE);
-		lblLockMessage.setText("Lock message:");
+		Label lblDeniedMessage = new Label(container, SWT.NONE);
+		lblDeniedMessage.setText("Denied message:");
 		
-		txtLockMessage = new Text(container, SWT.BORDER);
-		txtLockMessage.setToolTipText("Lock message");
-		GridData gd_txtLockMessage = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
-		gd_txtLockMessage.heightHint = 63;
-		txtLockMessage.setLayoutData(gd_txtLockMessage);
+		txtDeniedMessage = new Text(container, SWT.BORDER);
+		txtDeniedMessage.setToolTipText("Denied message");
+		GridData gd_txtDeniedMessage = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
+		gd_txtDeniedMessage.heightHint = 63;
+		txtDeniedMessage.setLayoutData(gd_txtDeniedMessage);
 		
 		Label lblPermissionCode = new Label(container, SWT.NONE);
 		lblPermissionCode.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
@@ -238,29 +236,29 @@ public class EditInfobaseDialog extends Dialog {
 		txtPermissionCode.setToolTipText("Permission code");
 		txtPermissionCode.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		Label lblLockParameter = new Label(container, SWT.NONE);
-		lblLockParameter.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblLockParameter.setText("Lock parameter");
+		Label lblDeniedParameter = new Label(container, SWT.NONE);
+		lblDeniedParameter.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblDeniedParameter.setText("Denied parameter");
 		
-		txtLockParameter = new Text(container, SWT.BORDER);
-		txtLockParameter.setToolTipText("Lock parameter");
-		txtLockParameter.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtDeniedParameter = new Text(container, SWT.BORDER);
+		txtDeniedParameter.setToolTipText("Denied parameter");
+		txtDeniedParameter.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		new Label(container, SWT.NONE);
 		
-		btnSheduledJobsLock = new Button(container, SWT.CHECK);
-		btnSheduledJobsLock.setText("Sheduled jobs lock");
+		btnSheduledJobsDenied = new Button(container, SWT.CHECK);
+		btnSheduledJobsDenied.setText("Sheduled jobs denied");
 		
-		Label lblExternalSessionManagement = new Label(container, SWT.NONE);
-		lblExternalSessionManagement.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblExternalSessionManagement.setText("External session management");
+		Label lblExternalSessionManagerConnectionString = new Label(container, SWT.NONE);
+		lblExternalSessionManagerConnectionString.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblExternalSessionManagerConnectionString.setText("External session management");
 		
-		txtExternalSessionManagement = new Text(container, SWT.BORDER);
-		txtExternalSessionManagement.setToolTipText("External session management");
-		txtExternalSessionManagement.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtExternalSessionManagerConnectionString = new Text(container, SWT.BORDER);
+		txtExternalSessionManagerConnectionString.setToolTipText("External session management");
+		txtExternalSessionManagerConnectionString.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		new Label(container, SWT.NONE);
 		
-		btnMandatoryUseExternalManagement = new Button(container, SWT.CHECK);
-		btnMandatoryUseExternalManagement.setText("Mandatory use of external management");
+		btnExternalSessionManagerRequired = new Button(container, SWT.CHECK);
+		btnExternalSessionManagerRequired.setText("Required use of external management");
 		
 		Label lblSecurityProfile = new Label(container, SWT.NONE);
 		lblSecurityProfile.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
@@ -270,9 +268,9 @@ public class EditInfobaseDialog extends Dialog {
 		txtSecurityProfile.setToolTipText("Security profile");
 		txtSecurityProfile.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		Label lblSafeModeSecurity = new Label(container, SWT.NONE);
-		lblSafeModeSecurity.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblSafeModeSecurity.setText("Safe mode security profile");
+		Label lblSafeModeSecurityProfile = new Label(container, SWT.NONE);
+		lblSafeModeSecurityProfile.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblSafeModeSecurityProfile.setText("Safe mode security profile");
 		
 		txtSafeModeSecurityProfile = new Text(container, SWT.BORDER);
 		txtSafeModeSecurityProfile.setToolTipText("Safe mode security profile");
@@ -286,35 +284,41 @@ public class EditInfobaseDialog extends Dialog {
 
 	private void initServerProperties() {
 		if (infoBaseInfo != null) {
+			
+			// Common properties
 			this.txtInfobaseName.setText(infoBaseInfo.getName());
 			this.txtInfobaseDescription.setText(infoBaseInfo.getDescr());
-			this.txtSecureConnection.setText(Integer.toString(infoBaseInfo.getSecurityLevel()));
+			this.txtSecurityLevel.setText(Integer.toString(infoBaseInfo.getSecurityLevel()));
+			this.btnAllowDistributeLicense.setSelection(infoBaseInfo.getLicenseDistributionAllowed() == 1);
+			this.btnSheduledJobsDenied.setSelection(infoBaseInfo.isScheduledJobsDenied());
 			
+			// DB properties
 			this.txtServerDBName.setText(infoBaseInfo.getDbServerName());
 			this.comboServerDBType.setText(infoBaseInfo.getDbms());
-			this.txtDatabaseName.setText(infoBaseInfo.getDbName());
-			this.txtDatabaseLogin.setText(infoBaseInfo.getDbUser());
-			this.txtDatabasePwd.setText(infoBaseInfo.getDbPassword());
+			this.txtDatabaseDbName.setText(infoBaseInfo.getDbName());
+			this.txtDatabaseDbUser.setText(infoBaseInfo.getDbUser());
+			this.txtDatabaseDbPassword.setText(infoBaseInfo.getDbPassword());
 			
-			this.btnSessionsLock.setSelection(infoBaseInfo.isSessionsDenied());
+			// Lock properties
+			this.btnSessionsDenied.setSelection(infoBaseInfo.isSessionsDenied());
 			
-			Date deniedFrom = infoBaseInfo.getDeniedFrom();//deniedFrom.
+			Date deniedFrom = infoBaseInfo.getDeniedFrom();
+			this.deniedFromDate.setDate(1900 + deniedFrom.getYear(), deniedFrom.getMonth(), deniedFrom.getDate());
+			this.deniedFromTime.setTime(deniedFrom.getHours(), deniedFrom.getMinutes(), deniedFrom.getSeconds());
+			
 			Date deniedTo  	= infoBaseInfo.getDeniedTo();
-
-			this.dateTimeLockStart.setDate(1900 + deniedFrom.getYear(), deniedFrom.getMonth(), deniedFrom.getDate());
-			this.dateTimeLockStartTime.setTime(deniedFrom.getHours(), deniedFrom.getMinutes(), deniedFrom.getSeconds());
-			this.dateTimeLockStop.setDate(1900 + deniedTo.getYear(), deniedTo.getMonth(), deniedTo.getDate());
-			this.dateTimeLockStopTime.setTime(deniedTo.getHours(), deniedTo.getMinutes(), deniedTo.getSeconds());
+			this.deniedToDate.setDate(1900 + deniedTo.getYear(), deniedTo.getMonth(), deniedTo.getDate());
+			this.deniedToTime.setTime(deniedTo.getHours(), deniedTo.getMinutes(), deniedTo.getSeconds());
 			
-			this.txtLockMessage.setText(infoBaseInfo.getDeniedMessage());
+			this.txtDeniedMessage.setText(infoBaseInfo.getDeniedMessage());
 			this.txtPermissionCode.setText(infoBaseInfo.getPermissionCode());
-			this.txtLockParameter.setText(infoBaseInfo.getDeniedParameter());
+			this.txtDeniedParameter.setText(infoBaseInfo.getDeniedParameter());
 			
-			this.btnAllowDistributeLicense.setSelection(infoBaseInfo.isScheduledJobsDenied());
+			// ExternalSessionManager properties
+			this.txtExternalSessionManagerConnectionString.setText(infoBaseInfo.getExternalSessionManagerConnectionString());
+			this.btnExternalSessionManagerRequired.setSelection(infoBaseInfo.getExternalSessionManagerRequired());
 			
-			this.txtExternalSessionManagement.setText(infoBaseInfo.getExternalSessionManagerConnectionString());
-			this.btnMandatoryUseExternalManagement.setSelection(infoBaseInfo.getExternalSessionManagerRequired());
-			
+			// SecurityProfile properties			
 			this.txtSecurityProfile.setText(infoBaseInfo.getSecurityProfileName());
 			this.txtSafeModeSecurityProfile.setText(infoBaseInfo.getSafeModeSecurityProfileName());
 			
@@ -325,104 +329,105 @@ public class EditInfobaseDialog extends Dialog {
 	private void saveNewServerProperties() {
 		if (infoBaseInfo != null) {
 			
-			// Common Section
-			if (infobaseName != infoBaseInfo.getName())
+			// Common properties
+			if (!infobaseName.equals(infoBaseInfo.getName()))
 				infoBaseInfo.setName(infobaseName);
 			
-			if (infobaseDescription != infoBaseInfo.getDescr())
+			if (!infobaseDescription.equals(infoBaseInfo.getDescr()))
 				infoBaseInfo.setDescr(infobaseDescription);
 			
-//			if (allowDistributeLicense != infoBaseInfo.getLicenseDistributionAllowed())
-//				infoBaseInfo.setLicenseDistributionAllowed(allowDistributeLicense);
+			if (allowDistributeLicense != infoBaseInfo.getLicenseDistributionAllowed())
+				infoBaseInfo.setLicenseDistributionAllowed(allowDistributeLicense);
 			
-			if (sheduledJobsLock != infoBaseInfo.isScheduledJobsDenied())
-				infoBaseInfo.setScheduledJobsDenied(sheduledJobsLock);
+			if (sheduledJobsDenied != infoBaseInfo.isScheduledJobsDenied())
+				infoBaseInfo.setScheduledJobsDenied(sheduledJobsDenied);
 			
 //			if (secureConnection != infoBaseInfo.getSecurityLevel()) // не меняется
 //				infoBaseInfo.se(secureConnection);
 			
-			// DB Section
-			if (serverDBName != infoBaseInfo.getDbServerName())
+			// DB properties
+			if (!serverDBName.equals(infoBaseInfo.getDbServerName()))
 				infoBaseInfo.setDbServerName(serverDBName);
 			
-			if (serverDBType != infoBaseInfo.getDbms())
+			if (!serverDBType.equals(infoBaseInfo.getDbms()))
 				infoBaseInfo.setDbms(serverDBType);
 			
-			if (databaseName != infoBaseInfo.getDbName())
-				infoBaseInfo.setDbName(databaseName);
+			if (!databaseDbName.equals(infoBaseInfo.getDbName()))
+				infoBaseInfo.setDbName(databaseDbName);
 			
-			if (databaseLogin != infoBaseInfo.getDbUser())
-				infoBaseInfo.setDbUser(databaseLogin);
+			if (!databaseDbUser.equals(infoBaseInfo.getDbUser()))
+				infoBaseInfo.setDbUser(databaseDbUser);
 			
-			if (databasePwd != infoBaseInfo.getDbPassword())
-				infoBaseInfo.setDbPassword(databasePwd);
+			if (!databaseDbPassword.equals(infoBaseInfo.getDbPassword()))
+				infoBaseInfo.setDbPassword(databaseDbPassword);
 			
-			// Lock Section
-			if (sessionsLock != infoBaseInfo.isSessionsDenied())
-				infoBaseInfo.setSessionsDenied(sessionsLock);
+			// Lock properties
+			if (sessionsDenied != infoBaseInfo.isSessionsDenied())
+				infoBaseInfo.setSessionsDenied(sessionsDenied);
 			
-			if (deniedFrom != infoBaseInfo.getDeniedFrom())
-				infoBaseInfo.setDeniedFrom(deniedFrom);
+			if (sessionsDeniedFrom != infoBaseInfo.getDeniedFrom())
+				infoBaseInfo.setDeniedFrom(sessionsDeniedFrom);
 			
-			if (deniedTo != infoBaseInfo.getDeniedTo())
-				infoBaseInfo.setDeniedTo(deniedTo);
+			if (sessionsDeniedTo != infoBaseInfo.getDeniedTo())
+				infoBaseInfo.setDeniedTo(sessionsDeniedTo);
 			
-			if (lockMessage != infoBaseInfo.getDeniedMessage())
-				infoBaseInfo.setDeniedMessage(lockMessage);
+			if (deniedMessage != infoBaseInfo.getDeniedMessage())
+				infoBaseInfo.setDeniedMessage(deniedMessage);
 			
-			if (permissionCode != infoBaseInfo.getDeniedMessage())
-				infoBaseInfo.setDeniedMessage(permissionCode);
+			if (permissionCode != infoBaseInfo.getPermissionCode())
+				infoBaseInfo.setPermissionCode(permissionCode);
 			
-			if (lockParameter != infoBaseInfo.getDeniedParameter())
-				infoBaseInfo.setDeniedParameter(lockParameter);
+			if (deniedParameter != infoBaseInfo.getDeniedParameter())
+				infoBaseInfo.setDeniedParameter(deniedParameter);
 			
-			// ExternalSessionManager Section
-			if (externalSessionManagement != infoBaseInfo.getExternalSessionManagerConnectionString())
-				infoBaseInfo.setExternalSessionManagerConnectionString(externalSessionManagement);
+			// ExternalSessionManager properties
+			if (externalSessionManagerConnectionString != infoBaseInfo.getExternalSessionManagerConnectionString())
+				infoBaseInfo.setExternalSessionManagerConnectionString(externalSessionManagerConnectionString);
 			
-			if (mandatoryUseExternalManagement != infoBaseInfo.getExternalSessionManagerRequired())
-				infoBaseInfo.setExternalSessionManagerRequired(mandatoryUseExternalManagement);
+			if (externalSessionManagerRequired != infoBaseInfo.getExternalSessionManagerRequired())
+				infoBaseInfo.setExternalSessionManagerRequired(externalSessionManagerRequired);
 			
-			// SecurityProfile Section			
+			// SecurityProfile properties			
 			if (securityProfile != infoBaseInfo.getSecurityProfileName())
 				infoBaseInfo.setSecurityProfileName(securityProfile);
 			
 			if (safeModeSecurityProfile != infoBaseInfo.getSafeModeSecurityProfileName())
 				infoBaseInfo.setSafeModeSecurityProfileName(safeModeSecurityProfile);
 			
-			
 			server.clusterConnector.updateInfoBase(server.clusterID, infoBaseInfo);
 			
 		}
 	}
 
-	private void extractInfobaseVariables() {
-		infobaseName 		= txtInfobaseName.getText();
-		infobaseDescription = txtInfobaseDescription.getText();
-		secureConnection 	= txtSecureConnection.getText();
+	private void extractInfobaseVariablesFromControls() {
 		
-		serverDBName 	= txtServerDBName.getText();
-		serverDBType 	= comboServerDBType.getText();
-		databaseName 	= txtDatabaseName.getText();
-		databaseLogin 	= txtDatabaseLogin.getText();
-		databasePwd 	= txtDatabasePwd.getText();
+		// Common properties
+		infobaseName 			= txtInfobaseName.getText();
+		infobaseDescription 	= txtInfobaseDescription.getText();
+		secureConnection 		= txtSecurityLevel.getText();
+		allowDistributeLicense 	= btnAllowDistributeLicense.getSelection() ? 1 : 0;
+		sheduledJobsDenied 		= btnSheduledJobsDenied.getSelection();
 		
-		allowDistributeLicense 	= btnAllowDistributeLicense.getSelection();
+		// DB properties
+		serverDBName 		= txtServerDBName.getText();
+		serverDBType 		= comboServerDBType.getText();
+		databaseDbName 		= txtDatabaseDbName.getText();
+		databaseDbUser 		= txtDatabaseDbUser.getText();
+		databaseDbPassword 	= txtDatabaseDbPassword.getText();
 		
-		sessionsLock 	= btnSessionsLock.getSelection();
-		deniedFrom 	= convertDateTime(dateTimeLockStart, dateTimeLockStartTime);
-//		lockStartTime 	= dateTimeLockStartTime.getText();
-		deniedTo 	= convertDateTime(dateTimeLockStop, dateTimeLockStopTime);
-//		lockStopTime 	= dateTimeLockStopTime.getText();
-		lockMessage 	= txtLockMessage.getText();
-		permissionCode 	= txtPermissionCode.getText();
-		lockParameter 	= txtLockParameter.getText();
+		// Lock properties
+		sessionsDenied 		= btnSessionsDenied.getSelection();
+		sessionsDeniedFrom 	= convertDateTime(deniedFromDate, deniedFromTime);
+		sessionsDeniedTo 	= convertDateTime(deniedToDate, deniedToTime);
+		deniedMessage 		= txtDeniedMessage.getText();
+		permissionCode 		= txtPermissionCode.getText();
+		deniedParameter 	= txtDeniedParameter.getText();
 		
-		sheduledJobsLock = btnSheduledJobsLock.getSelection();
+		// ExternalSessionManager properties
+		externalSessionManagerConnectionString 	= txtExternalSessionManagerConnectionString.getText();
+		externalSessionManagerRequired 			= btnExternalSessionManagerRequired.getSelection();
 		
-		externalSessionManagement 		= txtExternalSessionManagement.getText();
-		mandatoryUseExternalManagement 	= btnMandatoryUseExternalManagement.getSelection();
-		
+		// SecurityProfile properties			
 		securityProfile 		= txtSecurityProfile.getText();
 		safeModeSecurityProfile = txtSafeModeSecurityProfile.getText();
 	}
@@ -459,7 +464,7 @@ public class EditInfobaseDialog extends Dialog {
 		buttonPr.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				extractInfobaseVariables();
+				extractInfobaseVariablesFromControls();
 				saveNewServerProperties();
 			}
 		});
@@ -470,7 +475,7 @@ public class EditInfobaseDialog extends Dialog {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point(450, 740);
+		return new Point(480, 740);
 	}
 
 }
