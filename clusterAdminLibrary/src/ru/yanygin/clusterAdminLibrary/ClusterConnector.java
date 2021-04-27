@@ -176,6 +176,7 @@ public final class ClusterConnector
 		
 		return connection.getInfoBaseInfo(clusterId, infoBaseId);
 	}
+	
 	public IInfoBaseInfoShort getInfoBaseShortInfo(UUID clusterId, UUID infoBaseId)
 	{
 		if (connection == null)
@@ -201,7 +202,27 @@ public final class ClusterConnector
 		
 		connection.updateInfoBase(clusterId, info);
     }
-	
+    
+    public UUID createInfoBase(UUID clusterId, IInfoBaseInfo info, int infobaseCreationMode)
+    {
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
+		
+		return connection.createInfoBase(clusterId, info, infobaseCreationMode);
+    }
+    
+    public void dropInfoBase(UUID clusterId, UUID infobaseId, int dropMode)
+    {
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
+		
+		connection.dropInfoBase(clusterId, infobaseId, dropMode);
+    }
+    
     /**
      * Terminates all sessions for all infobases in the cluster
      *
@@ -290,6 +311,17 @@ public final class ClusterConnector
 		}
 
         return connection.getConnectionsShort(clusterId);
+        
+    }
+    
+    public List<IInfoBaseConnectionShort> getInfoBaseConnectionsShort(UUID clusterId, UUID infobaseId)
+    {
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
+
+        return connection.getInfoBaseConnectionsShort(clusterId, infobaseId);
         
     }
     

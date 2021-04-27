@@ -98,7 +98,9 @@ public class Config {
 		
 		public ClusterConnector clusterConnector;
 		
-		public UUID clusterID; // private
+//		public UUID clusterID; // deprecated
+		public List<IClusterInfo> clusterInfoList;
+		public Map<UUID, List<IInfoBaseInfoShort>> clustersInfoBasesShortCashe;
 
 		public Server(String serverName) {
 			this.serverHost = calcHostName(serverName);
@@ -110,12 +112,14 @@ public class Config {
 			this.autoconnect = false;
 			this.available = false;
 			
+			init();
+
+		}
+
+		public void init() {
 			AgentAdminConnectorFactory factory = new AgentAdminConnectorFactory();
 			this.clusterConnector = new ClusterConnector(factory);
-			
-//			List<IClusterInfo> clusterInfoList = this.clusterConnector.getClusterInfoList();
-//			this.clusterID = clusterInfoList.get(0).getClusterId();
-
+			this.clustersInfoBasesShortCashe = new HashMap<>();
 		}
 
 		public String getServerKey() {
@@ -226,10 +230,10 @@ public class Config {
 					clusterConnector.disconnect();	
 				}
 				//auth
-				List<IClusterInfo> clusterInfoList = clusterConnector.getClusterInfoList();
-//				IClusterInfo cluster = clusterInfoList.get(0);
-				clusterID = clusterInfoList.get(0).getClusterId();
-				clusterConnector.authenticateCluster(clusterID, "", "");
+				clusterInfoList = clusterConnector.getClusterInfoList();
+				clusterInfoList.forEach(clusterInfo -> {
+					clusterConnector.authenticateCluster(clusterInfo.getClusterId(), "", "");
+				});
 				
 			}
 			catch (Exception e) {
@@ -261,41 +265,57 @@ public class Config {
 
 		}
 
-	    public List<IInfoBaseInfo> getInfoBases()
+	    public List<IInfoBaseInfoShort> getInfoBasesShort(UUID clusterID)
 	    {
 	    	// сделать кеширование списка инфобаз
-	    	return clusterConnector.getInfoBases(clusterID);
+	    	List<IInfoBaseInfoShort> clusterInfoBases = clusterConnector.getInfoBasesShort(clusterID);
+	    	
+	    	clustersInfoBasesShortCashe.put(clusterID, clusterInfoBases);
+	    	return clusterInfoBases;
 	        
 	    }
 
-	    public String getInfoBaseName(UUID infobaseID)
+	    public String getInfoBaseName(UUID clusterID, UUID infobaseID)
 	    {
-	    	List<IInfoBaseInfo> infobases = this.getInfoBases();
-	    	
+
 			String infobaseName = "";
-			
-			for (IInfoBaseInfo infobase : infobases) {
+	    	
+			// Сперва достаем из кеша
+	    	List<IInfoBaseInfoShort> clusterInfoBases = clustersInfoBasesShortCashe.get(clusterID);
+			for (IInfoBaseInfoShort infobase : clusterInfoBases) {
 				if (infobase.getInfoBaseId().equals(infobaseID)){
 					infobaseName = infobase.getName();
 					break;
 				}
 			}
+			// В кеше не нашли, обновляем кеш списка инфобаз и снова ищем
+			if (infobaseName.isBlank()) {
+		    	clusterInfoBases = clusterConnector.getInfoBasesShort(clusterID);
+		    	clustersInfoBasesShortCashe.put(clusterID, clusterInfoBases);
+				for (IInfoBaseInfoShort infobase : clusterInfoBases) {
+					if (infobase.getInfoBaseId().equals(infobaseID)){
+						infobaseName = infobase.getName();
+						break;
+					}
+				}
+			}
+			
 			return infobaseName;
 			
 	    }
 	    
-	    public List<ISessionInfo> getInfoBaseSessions(IInfoBaseInfoShort ibs)
+	    public List<ISessionInfo> getInfoBaseSessions(UUID clusterID, UUID infobaseId)
 	    {
 	    	List<ISessionInfo> sessions = new ArrayList<>();
 			if (!clusterConnector.isConnected())
 				return sessions;
 			
 //			UUID infobaseId = ibs.getInfoBaseId();
-	        return clusterConnector.getInfoBaseSessions(clusterID, ibs.getInfoBaseId());
+	        return clusterConnector.getInfoBaseSessions(clusterID, infobaseId);
 	        
 	    }
 
-	    public List<ISessionInfo> getSessions()
+	    public List<ISessionInfo> getSessions(UUID clusterID)
 	    {
 	    	List<ISessionInfo> sessions = new ArrayList<>();
 			if (!clusterConnector.isConnected())
@@ -305,7 +325,7 @@ public class Config {
 	        
 	    }
 
-	    public List<IInfoBaseConnectionShort> getConnections()
+	    public List<IInfoBaseConnectionShort> getConnections(UUID clusterID)
 	    {
 	    	List<IInfoBaseConnectionShort> connections = new ArrayList<>();
 			if (!clusterConnector.isConnected())
@@ -314,8 +334,18 @@ public class Config {
 	        return clusterConnector.getConnectionsShort(clusterID);
 	        
 	    }
+
+	    public List<IInfoBaseConnectionShort> getInfoBaseConnectionsShort(UUID clusterID, UUID infobaseId)
+	    {
+	    	List<IInfoBaseConnectionShort> connections = new ArrayList<>();
+			if (!clusterConnector.isConnected())
+				return connections;
+			
+	        return clusterConnector.getInfoBaseConnectionsShort(clusterID, infobaseId);
+	        
+	    }
 		
-		public void terminateSession(UUID sessionId) {
+		public void terminateSession(UUID clusterID, UUID sessionId) {
 			
 			clusterConnector.terminateSession(clusterID, sessionId);
 			

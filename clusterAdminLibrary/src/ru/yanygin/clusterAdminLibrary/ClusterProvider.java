@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -67,11 +68,11 @@ public class ClusterProvider {
 		}
 		else {
 			commonConfig.servers.forEach((server, config) -> {
-				AgentAdminConnectorFactory factory = new AgentAdminConnectorFactory();
-				config.clusterConnector = new ClusterConnector(factory);
+				config.init();;
 				if (config.autoconnect) {
 					config.connect(false);
 				}
+
 			});
 		}
 	}

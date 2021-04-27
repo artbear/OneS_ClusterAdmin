@@ -24,7 +24,7 @@ import org.eclipse.swt.events.DisposeEvent;
 public class EditServerDialog extends Dialog {
 	
 	private Button btnAutoconnect;
-	private Text txtServerHost;
+	private Text txtRASHost;
 	private Text txtManagerPort;
 	private Text txtRemoteRasPort;
 	
@@ -41,6 +41,12 @@ public class EditServerDialog extends Dialog {
 	private String localRasV8version;
 	private int localRasPort;
 	private boolean autoconnect;
+	private Label lblV8Version;
+	private Label lblRemoteAgentPort;
+	private Text txtRemoteAgentPort;
+	private Text txtLocalRASLaunchString;
+	private Label lblLocalRASLaunchString;
+	private Button btnNewButton;
 
 	/**
 	 * Create the dialog.
@@ -67,7 +73,7 @@ public class EditServerDialog extends Dialog {
 	protected Control createDialogArea(Composite parent) {
 		parent.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
-				serverHost 			= txtServerHost.getText();
+				serverHost 			= txtRASHost.getText();
 				managerPort 		= Integer.parseInt(txtManagerPort.getText());
 				remoteRasPort 		= Integer.parseInt(txtRemoteRasPort.getText());
 				useLocalRas 		= btnUseLocalRas.getSelection();
@@ -78,46 +84,83 @@ public class EditServerDialog extends Dialog {
 		});
 		Composite container = (Composite) super.createDialogArea(parent);
 		GridLayout gridLayout = (GridLayout) container.getLayout();
-		gridLayout.numColumns = 2;
+		gridLayout.numColumns = 3;
 		
 		btnAutoconnect = new Button(container, SWT.CHECK);
 		btnAutoconnect.setText("Autoconnect");
 		new Label(container, SWT.NONE);
+		new Label(container, SWT.NONE);
 		
-		Label lblServerAddress = new Label(container, SWT.NONE);
-		lblServerAddress.setText("Server Address");
+		Label lblRASHost = new Label(container, SWT.NONE);
+		lblRASHost.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblRASHost.setText("RAS Host");
 		
-		txtServerHost = new Text(container, SWT.BORDER);
-		txtServerHost.setToolTipText("server address");
-		txtServerHost.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtRASHost = new Text(container, SWT.BORDER);
+		txtRASHost.setToolTipText("RAS host");
+		txtRASHost.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
 		
 		Label lblManagerPort = new Label(container, SWT.NONE);
+		lblManagerPort.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblManagerPort.setText("Manager Port");
 		
 		txtManagerPort = new Text(container, SWT.BORDER);
 		txtManagerPort.setTouchEnabled(true);
 		txtManagerPort.setToolTipText("agent port");
 		txtManagerPort.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
 		
 		Label lblRemoteRasPort = new Label(container, SWT.NONE);
+		lblRemoteRasPort.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblRemoteRasPort.setText("Remote RAS Port");
 		
 		txtRemoteRasPort = new Text(container, SWT.BORDER);
 		txtRemoteRasPort.setToolTipText("RAS Port");
 		txtRemoteRasPort.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
 		
 		btnUseLocalRas = new Button(container, SWT.CHECK);
 		btnUseLocalRas.setText("Use local RAS");
+		new Label(container, SWT.NONE);
+		new Label(container, SWT.NONE);
+		
+		lblV8Version = new Label(container, SWT.NONE);
+		lblV8Version.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblV8Version.setText("Platform V8 version");
 		
 		comboV8Versions = new Combo(container, SWT.NONE);
 		comboV8Versions.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
+		// Заполнить список доступных платформ V8
+		
+		lblRemoteAgentPort = new Label(container, SWT.NONE);
+		lblRemoteAgentPort.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblRemoteAgentPort.setText("Remote Agent Port");
+		
+		txtRemoteAgentPort = new Text(container, SWT.BORDER);
+		txtRemoteAgentPort.setToolTipText("Remote Agent Port");
+		txtRemoteAgentPort.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
 		
 		Label lblLocalRasPort = new Label(container, SWT.NONE);
+		lblLocalRasPort.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblLocalRasPort.setText("Local RAS port");
 		
 		txtLocalRasPort = new Text(container, SWT.BORDER);
 		txtLocalRasPort.setToolTipText("local RAS port");
 		txtLocalRasPort.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
+		
+		lblLocalRASLaunchString = new Label(container, SWT.NONE);
+		lblLocalRASLaunchString.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblLocalRASLaunchString.setText("Local RAS launch string");
+		
+		txtLocalRASLaunchString = new Text(container, SWT.BORDER);
+		txtLocalRASLaunchString.setToolTipText("LocalRASLaunchString");
+		txtLocalRASLaunchString.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		
+		btnNewButton = new Button(container, SWT.NONE);
+		btnNewButton.setText("Rebuild");
 
 		initServerProperties();
 
@@ -127,7 +170,7 @@ public class EditServerDialog extends Dialog {
 
 	private void initServerProperties() {
 		if (serverParams != null) {
-			this.txtServerHost.setText(serverParams.serverHost);
+			this.txtRASHost.setText(serverParams.serverHost);
 			this.txtManagerPort.setText(serverParams.getManagerPortAsString());
 			this.txtRemoteRasPort.setText(serverParams.getRemoteRasPortAsString());
 			this.btnUseLocalRas.setSelection(serverParams.useLocalRas);
@@ -186,7 +229,7 @@ public class EditServerDialog extends Dialog {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point(450, 300);
+		return new Point(450, 340);
 	}
 
 }

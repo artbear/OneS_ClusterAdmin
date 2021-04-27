@@ -1,5 +1,6 @@
 package ru.yanygin.clusterAdminLibraryUI;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jface.window.ApplicationWindow;
@@ -31,6 +32,7 @@ import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.wb.swt.SWTResourceManager;
 
+import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseConnectionShort;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfoShort;
@@ -38,6 +40,7 @@ import com._1c.v8.ibis.admin.ISessionInfo;
 import com._1c.v8.ibis.admin.InfoBaseInfo;
 import com._1c.v8.ibis.admin.InfoBaseInfoShort;
 
+import ru.yanygin.clusterAdminLibrary.ClusterConnector;
 import ru.yanygin.clusterAdminLibrary.ClusterProvider;
 import ru.yanygin.clusterAdminLibrary.Config.Server;
 
@@ -47,10 +50,12 @@ public class ViewerArea extends Composite {
 	Image serverIconUp;
 	Image serverIconDown;
 	Image infobaseIcon;
+	Image clusterIcon;
 	
 	Tree serversTree;
-	Menu serversMenu;
-	Menu databaseMenu;
+	Menu serverMenu;
+	Menu clusterMenu;
+	Menu infobaseMenu;
 	
 	Table tableSessions;
 //	Menu tableSessionsMenu;
@@ -93,20 +98,44 @@ public class ViewerArea extends Composite {
 		clusterProvider.getServers().forEach((serverKey, server) -> {
 			TreeItem serverItem = addServerItemInServersTree(server);
 			
-			if (server.clusterConnector.isConnected()) {
-				// Заполнение списка инфобаз
-//				List<IInfoBaseInfo> infoBaseInfoList = clusterProvider.getInfobases(serverConfig);
-//				for (IInfoBaseInfo infoBaseInfo : infoBaseInfoList) {
-//					addInfobaseItemInServersTree(serverItem, infoBaseInfo);
-//				}
-				fillInfobaseOfServer(serverItem, server);
-			}
+			fillClustersInTree(serverItem);
+			
+//			if (server.clusterConnector.isConnected()) {
+//				
+//				fillClustersInTree(serverItem, server);
+//			}
 		});
 
 		
 		// Пропорции областей
-		sashForm.setWeights(new int[] {1, 4});
+		sashForm.setWeights(new int[] {3, 10});
 
+	}
+
+	private void fillClustersInTree(TreeItem serverItem) {
+		
+		// Пока что удалить все кластера из списка, может лучше добавить недостающие?
+		TreeItem[] clusterItems = serverItem.getItems();
+		for (TreeItem clusterItem : clusterItems) {
+			clusterItem.dispose();
+		}
+
+		Server server = (Server) serverItem.getData("ServerConfig");
+		serverItem.setImage(server.clusterConnector.isConnected() ? serverIconUp : serverIconDown);
+		
+		if (!server.clusterConnector.isConnected()) {
+			return;
+		}
+		
+		server.clusterInfoList.forEach(clusterInfo -> {
+			TreeItem clusterItem = addClusterItemInServersTree(serverItem, clusterInfo);
+			
+			// Заполнение списка инфобаз
+			fillInfobaseOfCluster(clusterItem, server);
+		});
+
+		// Разворачиваем дерево, если список кластеров не пустой
+		serverItem.setExpanded(!server.clusterInfoList.isEmpty());
 	}
 
 	private void initToolbar(Composite parent, ToolBar toolBar, ClusterProvider clusterProvider) {
@@ -141,29 +170,51 @@ public class ViewerArea extends Composite {
 			public void widgetSelected(SelectionEvent e) {
 				
 				clusterProvider.connectToServers();
-				List<String> connectedServers = clusterProvider.getConnectedServers();
+//				List<String> connectedServers = clusterProvider.getConnectedServers();
 				
-				if (connectedServers.isEmpty())
-					return;
+//				if (connectedServers.isEmpty())
+//					return;
 				
 				// смена иконки сервера на вкл/выкл
 				TreeItem[] serversItem = serversTree.getItems();
+				
 				for (int i = 0; i < serversItem.length; i++) {
 					TreeItem serverItem = serversItem[i];
 					
-					String serverKey = (String) serverItem.getData("ServerKey"); // serverItem.getText();
-					if (connectedServers.contains(serverKey)) {
-						serverItem.setImage(serverIconUp);
-						
-						// заполнение списка баз у подключенных серверов
-						Server server = (Server) serverItem.getData("ServerConfig");
-						if (server.clusterConnector.isConnected()) {
-							fillInfobaseOfServer(serverItem, server);
-						}
-					}
-					else {
-						serversItem[i].setImage(serverIconDown);
-					}
+					
+					fillClustersInTree(serverItem);
+					
+//					Server server = (Server) serverItem.getData("ServerConfig");
+//					if (server.clusterConnector.isConnected()) {
+//						
+//						// Пока что удалить все кластера из списка, может лучше добавить недостающие?
+//						TreeItem[] clusterItems = serverItem.getItems();
+//						for (TreeItem clusterItem : clusterItems) {
+//							clusterItem.dispose();
+//						}
+//						
+//						serverItem.setExpanded(true);
+//
+//						fillClustersInTree(serverItem);
+//					}
+					
+					
+	
+//					String serverKey = (String) serverItem.getData("ServerKey"); // serverItem.getText();
+//					if (connectedServers.contains(serverKey)) {
+//						serverItem.setImage(serverIconUp);
+//						
+//						// заполнение списка баз у подключенных серверов
+//						Server server = (Server) serverItem.getData("ServerConfig");
+//						if (server.clusterConnector.isConnected()) {
+//							fillInfobaseOfCluster(serverItem, server);
+//						}else {
+//							serversItem[i].setImage(serverIconDown);
+//						}
+//					}
+//					else {
+//						serversItem[i].setImage(serverIconDown);
+//					}
 				}
 				
 			}
@@ -179,7 +230,7 @@ public class ViewerArea extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 
-				// нужно сделать, что бы была реакция только на левый клик мышью!
+				// кажется нужно сделать, что бы была реакция только на левый клик мышью
 
 				TreeItem[] item = serversTree.getSelection();
 				if (item.length == 0)
@@ -189,28 +240,46 @@ public class ViewerArea extends Composite {
 				TreeItem treeItem = (TreeItem) event.item;
 				
 				Server serverConfig;
+				IClusterInfo clusterInfo;
 				IInfoBaseInfoShort infoBaseInfo;
+				
 				List<ISessionInfo> sessions;
 				List<IInfoBaseConnectionShort> connections;
 				
 				switch ((String) treeItem.getData("Type")) {
 				case "Server":
-					serversTree.setMenu(serversMenu);
-
-					serverConfig = (Server) treeItem.getData("ServerConfig");
-					infoBaseInfo = null;
+					serversTree.setMenu(serverMenu);
 					
-					sessions = serverConfig.getSessions();
-					connections = serverConfig.getConnections();
-					break;
-				case "Infobase":
-					serversTree.setMenu(databaseMenu);
+					tableSessions.removeAll();
+					tableConnections.removeAll();
+					return;
+
+//					serverConfig = (Server) treeItem.getData("ServerConfig");
+//					clusterInfo = null;
+//					infoBaseInfo = null;
+//					
+//					sessions = serverConfig.getSessions();
+//					connections = serverConfig.getConnections();
+//					break;
+				case "Cluster":
+					serversTree.setMenu(clusterMenu);
 
 					serverConfig = (Server) treeItem.getParentItem().getData("ServerConfig");
+					clusterInfo = (IClusterInfo) treeItem.getData("ClusterInfo");
+					infoBaseInfo = null;
+					
+					sessions = serverConfig.getSessions(clusterInfo.getClusterId());
+					connections = serverConfig.getConnections(clusterInfo.getClusterId());
+					break;
+				case "Infobase":
+					serversTree.setMenu(infobaseMenu);
+
+					serverConfig = (Server) treeItem.getParentItem().getParentItem().getData("ServerConfig");
+					clusterInfo = (IClusterInfo) treeItem.getParentItem().getData("ClusterInfo");
 					infoBaseInfo = (IInfoBaseInfoShort) treeItem.getData("InfoBaseInfoShort");
 					
-					sessions = serverConfig.getInfoBaseSessions(infoBaseInfo);
-					connections = serverConfig.getConnections();//null;//;
+					sessions = serverConfig.getInfoBaseSessions(clusterInfo.getClusterId(), infoBaseInfo.getInfoBaseId());
+					connections = serverConfig.getInfoBaseConnectionsShort(clusterInfo.getClusterId(), infoBaseInfo.getInfoBaseId());
 					break;
 				default:
 					return;
@@ -219,21 +288,21 @@ public class ViewerArea extends Composite {
 
 				tableSessions.removeAll();
 				sessions.forEach(session -> {
-					addSessionInTable(serverConfig, infoBaseInfo, session);
+					addSessionInTable(serverConfig, clusterInfo, infoBaseInfo, session);
 				});
 
 				tableConnections.removeAll();
 				connections.forEach(connection -> {
-					addConnectionInTable(serverConfig, infoBaseInfo, connection);
+					addConnectionInTable(serverConfig, clusterInfo, infoBaseInfo, connection);
 				});
 			}
 
-			private void addSessionInTable(Server serverConfig, IInfoBaseInfoShort infoBaseInfo, ISessionInfo session) {
+			private void addSessionInTable(Server serverConfig, IClusterInfo clusterInfo, IInfoBaseInfoShort infoBaseInfo, ISessionInfo session) {
 				TableItem sessionItem = new TableItem(tableSessions, SWT.NONE);
 
 				String infobaseName = "";
 				if (infoBaseInfo == null) {
-					infobaseName = serverConfig.getInfoBaseName(session.getInfoBaseId());
+					infobaseName = serverConfig.getInfoBaseName(clusterInfo.getClusterId(), session.getInfoBaseId());
 				} else {
 					infobaseName = infoBaseInfo.getName();
 				}
@@ -249,20 +318,18 @@ public class ViewerArea extends Composite {
 									session.getWorkingProcessId().toString() };
 
 				sessionItem.setText(itemText);
-				sessionItem.setData("SessionInfo", session);
-				sessionItem.setData("ServerConfig", serverConfig);
+				sessionItem.setData("ClusterInfo", clusterInfo);
 				sessionItem.setData("InfoBaseInfoShort", infoBaseInfo);
+				sessionItem.setData("SessionInfo", session);
 				sessionItem.setChecked(false);
 			}
 			
-			private void addConnectionInTable(Server serverConfig, IInfoBaseInfoShort infoBaseInfo, IInfoBaseConnectionShort connection) {
+			private void addConnectionInTable(Server serverConfig, IClusterInfo clusterInfo, IInfoBaseInfoShort infoBaseInfo, IInfoBaseConnectionShort connection) {
 				TableItem connectionItem = new TableItem(tableConnections, SWT.NONE);
 
-//				String infobaseName = infoBaseInfo.getName();
-//				String infobaseName = serverConfig.getInfoBaseName(connection.getInfoBaseId());
 				String infobaseName = "";
 				if (infoBaseInfo == null) {
-					infobaseName = serverConfig.getInfoBaseName(connection.getInfoBaseId());
+					infobaseName = serverConfig.getInfoBaseName(clusterInfo.getClusterId(), connection.getInfoBaseId());
 				} else {
 					infobaseName = infoBaseInfo.getName();
 				}
@@ -277,9 +344,9 @@ public class ViewerArea extends Composite {
 									connection.getWorkingProcessId().toString() };
 
 				connectionItem.setText(itemText);
-				connectionItem.setData("Connection", connection);
-				connectionItem.setData("ServerConfig", serverConfig);
+				connectionItem.setData("ClusterInfo", clusterInfo);
 				connectionItem.setData("InfoBaseInfoShort", infoBaseInfo);
+				connectionItem.setData("Connection", connection);
 				connectionItem.setChecked(false);
 			}
 
@@ -288,8 +355,8 @@ public class ViewerArea extends Composite {
 		initServersTreeContextMenu();
 		
 		TreeColumn columnServer = new TreeColumn(serversTree, SWT.LEFT);
-		columnServer.setText("Cluster/Infobase");
-		columnServer.setWidth(200);
+		columnServer.setText("Server/Cluster/Infobase");
+		columnServer.setWidth(300);
 		
 		TreeColumn columnPing = new TreeColumn(serversTree, SWT.CENTER);
 		columnPing.setText("RAS port");
@@ -298,10 +365,11 @@ public class ViewerArea extends Composite {
 	
 	
 	private void initServersTreeContextMenu() {
-		serversMenu = new Menu(serversTree);
-		serversTree.setMenu(serversMenu);
+		
+		// Server Menu
+		serverMenu = new Menu(serversTree);
 
-		MenuItem menuItemConnectServer = new MenuItem(serversMenu, SWT.NONE);
+		MenuItem menuItemConnectServer = new MenuItem(serverMenu, SWT.NONE);
 		menuItemConnectServer.setText("Connect to Server");
 		menuItemConnectServer.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -311,22 +379,19 @@ public class ViewerArea extends Composite {
 				if (item.length == 0)
 					return;
 				TreeItem serverItem = item[0];
-				Server serverConfig = (Server) serverItem.getData("ServerConfig");
+				Server server = (Server) serverItem.getData("ServerConfig");
 
-//				serverItem.setText(new String[] { serverConfig.getServerPresent() });
-//				clusterProvider.saveKnownServers();
-
-				if (serverConfig.connect(false)) {
+				if (server.connect(false)) {
 					serverItem.setImage(serverIconUp);
-					fillInfobaseOfServer(serverItem, serverConfig);
 				} else {
 					serverItem.setImage(serverIconDown);
 				}
+				fillClustersInTree(serverItem);
 
 			}
 		});
 		
-		MenuItem menuItemSisconnectServer = new MenuItem(serversMenu, SWT.NONE);
+		MenuItem menuItemSisconnectServer = new MenuItem(serverMenu, SWT.NONE);
 		menuItemSisconnectServer.setText("Disconnect of Server"); // Disconnect of Server??? - проверить написание
 		menuItemSisconnectServer.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -338,11 +403,18 @@ public class ViewerArea extends Composite {
 				TreeItem serverItem = item[0];
 				Server serverConfig = (Server) serverItem.getData("ServerConfig");
 
-//				serverItem.setText(new String[] { serverConfig.getServerPresent() });
-//				clusterProvider.saveKnownServers();
-
 				if (serverConfig.disconnect()) {
 					serverItem.setImage(serverIconDown);
+					
+					TreeItem[] clusterItems = serverItem.getItems();
+					for (TreeItem clusterItem : clusterItems) {
+						TreeItem[] infobaseItems = serverItem.getItems();
+						for (TreeItem infobaseItem : infobaseItems) {
+							infobaseItem.dispose();
+						}
+						clusterItem.dispose();
+					}
+
 				} else {
 					serverItem.setImage(serverIcon);
 				}
@@ -350,7 +422,7 @@ public class ViewerArea extends Composite {
 			}
 		});
 		
-		MenuItem menuItemAddNewServer = new MenuItem(serversMenu, SWT.NONE);
+		MenuItem menuItemAddNewServer = new MenuItem(serverMenu, SWT.NONE);
 		menuItemAddNewServer.setText("Add Server");
 		menuItemAddNewServer.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -368,23 +440,26 @@ public class ViewerArea extends Composite {
 				int dialogResult = connectionDialog.open();
 				if (dialogResult != 0) {
 					newServer = null;
+					return;
 				}
-				else {
+//				else {
 					clusterProvider.addNewServerInList(newServer);
 					TreeItem newServerItem = addServerItemInServersTree(newServer);
 					
-					if (newServer.autoconnect && newServer.connect(false)) {
-						newServerItem.setImage(serverIconUp);
-						fillInfobaseOfServer(newServerItem, newServer);
-					} else {
-						newServerItem.setImage(serverIconDown);
-					}
+					fillClustersInTree(newServerItem);
+					
+//					if (newServer.autoconnect && newServer.connect(false)) {
+//						newServerItem.setImage(serverIconUp);
+//						fillClustersInTree(newServerItem, newServer);
+//					} else {
+//						newServerItem.setImage(serverIconDown);
+//					}
 
-				}
+//				}
 			}
 		});
 		
-		MenuItem menuItemEditServer = new MenuItem(serversMenu, SWT.NONE);
+		MenuItem menuItemEditServer = new MenuItem(serverMenu, SWT.NONE);
 		menuItemEditServer.setText("Edit Server");
 		menuItemEditServer.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -408,13 +483,14 @@ public class ViewerArea extends Composite {
 					// перерисовать в дереве
 					serverItem.setText(new String[] { serverConfig.getServerPresent() });
 					clusterProvider.saveKnownServers();
+					fillClustersInTree(serverItem);
 					
-					if (serverConfig.autoconnect && serverConfig.connect(false)) {
-						serverItem.setImage(serverIconUp);
-						fillInfobaseOfServer(serverItem, serverConfig);
-					} else {
-						serverItem.setImage(serverIconDown);
-					}
+//					if (serverConfig.autoconnect && serverConfig.connect(false)) {
+//						serverItem.setImage(serverIconUp);
+//						fillClustersInTree(serverItem, serverConfig);
+//					} else {
+//						serverItem.setImage(serverIconDown);
+//					}
 					
 				}
 
@@ -423,8 +499,8 @@ public class ViewerArea extends Composite {
 		});
 
 		
-		MenuItem menuItemDeleteServer = new MenuItem(serversMenu, SWT.NONE);
-		menuItemDeleteServer.setText("Delete Server");
+		MenuItem menuItemDeleteServer = new MenuItem(serverMenu, SWT.NONE);
+		menuItemDeleteServer.setText("Delete/Remove Server");
 		menuItemDeleteServer.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
@@ -440,11 +516,12 @@ public class ViewerArea extends Composite {
 			}
 		});
 		
-		databaseMenu = new Menu(serversTree);
+		// Database Menu
+		clusterMenu = new Menu(serversTree);
 		
-		MenuItem menuItemEditDatabase = new MenuItem(databaseMenu, SWT.NONE);
-		menuItemEditDatabase.setText("Edit Database");
-		menuItemEditDatabase.addSelectionListener(new SelectionAdapter() {
+		MenuItem menuItemEditCluster = new MenuItem(clusterMenu, SWT.NONE);
+		menuItemEditCluster.setText("Edit Cluster");
+		menuItemEditCluster.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				TreeItem[] item = serversTree.getSelection();
@@ -452,12 +529,44 @@ public class ViewerArea extends Composite {
 					return;
 				
 				Server server = (Server) item[0].getParentItem().getData("ServerConfig");
+				IClusterInfo clusterInfo = (IClusterInfo) item[0].getData("ClusterInfo");
+				
+//				IInfoBaseInfo infoBaseInfo = server.clusterConnector.getInfoBaseInfo(clusterInfo.getClusterId(), infoBaseInfoShort.getInfoBaseId());
+//				EditInfobaseDialog infobaseDialog;
+//				try {
+//					infobaseDialog = new EditInfobaseDialog(getParent().getDisplay().getActiveShell(), infoBaseInfo, server);
+//				} catch (Exception excp) {
+//					excp.printStackTrace();
+//					return;
+//				}
+//				
+//				int dialogResult = infobaseDialog.open();
+//				if (dialogResult == 0) {
+////					server.clusterConnector.updateInfoBase(server.clusterID, infoBaseInfo);
+//				}
+			}
+		});
+		
+		// Database Menu
+		infobaseMenu = new Menu(serversTree);
+		
+		MenuItem menuItemEditInfobase = new MenuItem(infobaseMenu, SWT.NONE);
+		menuItemEditInfobase.setText("Edit Infobase");
+		menuItemEditInfobase.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				TreeItem[] item = serversTree.getSelection();
+				if (item.length == 0)
+					return;
+				
+				Server server = (Server) item[0].getParentItem().getParentItem().getData("ServerConfig");
+				IClusterInfo clusterInfo = (IClusterInfo) item[0].getParentItem().getData("ClusterInfo");
 				IInfoBaseInfoShort infoBaseInfoShort = (IInfoBaseInfoShort) item[0].getData("InfoBaseInfoShort");
 				
-				IInfoBaseInfo infoBaseInfo = server.clusterConnector.getInfoBaseInfo(server.clusterID, infoBaseInfoShort.getInfoBaseId());
+				IInfoBaseInfo infoBaseInfo = server.clusterConnector.getInfoBaseInfo(clusterInfo.getClusterId(), infoBaseInfoShort.getInfoBaseId());
 				EditInfobaseDialog infobaseDialog;
 				try {
-				infobaseDialog = new EditInfobaseDialog(getParent().getDisplay().getActiveShell(), infoBaseInfo, server);
+					infobaseDialog = new EditInfobaseDialog(getParent().getDisplay().getActiveShell(), infoBaseInfo, clusterInfo, server.clusterConnector);
 				} catch (Exception excp) {
 					excp.printStackTrace();
 					return;
@@ -469,6 +578,69 @@ public class ViewerArea extends Composite {
 				}
 			}
 		});
+		
+		MenuItem menuItemDeleteInfobase = new MenuItem(infobaseMenu, SWT.NONE);
+		menuItemDeleteInfobase.setText("Delete Infobase");
+		menuItemDeleteInfobase.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				TreeItem[] item = serversTree.getSelection();
+				if (item.length == 0)
+					return;
+				
+				Server server = (Server) item[0].getParentItem().getParentItem().getData("ServerConfig");
+				IClusterInfo clusterInfo = (IClusterInfo) item[0].getParentItem().getData("ClusterInfo");
+				IInfoBaseInfoShort infoBaseInfoShort = (IInfoBaseInfoShort) item[0].getData("InfoBaseInfoShort");
+				
+//				IInfoBaseInfo infoBaseInfo = server.clusterConnector.getInfoBaseInfo(clusterInfo.getClusterId(), infoBaseInfoShort.getInfoBaseId());
+				DropInfobaseDialog infobaseDialog;
+				try {
+					infobaseDialog = new DropInfobaseDialog(getParent().getDisplay().getActiveShell(), infoBaseInfoShort.getInfoBaseId(), clusterInfo, server.clusterConnector);
+				} catch (Exception excp) {
+					excp.printStackTrace();
+					return;
+				}
+				
+				int dialogResult = infobaseDialog.open();
+				if (dialogResult == 0) {
+					item[0].dispose();
+				}
+			}
+		});
+		
+		MenuItem menuItemNewInfobase = new MenuItem(clusterMenu, SWT.NONE);
+		menuItemNewInfobase.setText("New Infobase");
+		menuItemNewInfobase.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				TreeItem[] item = serversTree.getSelection();
+				if (item.length == 0)
+					return;
+				
+				Server server = (Server) item[0].getParentItem().getData("ServerConfig");
+				IClusterInfo clusterInfo = (IClusterInfo) item[0].getData("ClusterInfo");
+//				IInfoBaseInfoShort infoBaseInfoShort = (IInfoBaseInfoShort) item[0].getData("InfoBaseInfoShort");
+				
+//				IInfoBaseInfo infoBaseInfo = server.clusterConnector.getInfoBaseInfo(clusterInfo.getClusterId(), infoBaseInfoShort.getInfoBaseId());
+				CreateInfobaseDialog infobaseDialog;
+				try {
+					infobaseDialog = new CreateInfobaseDialog(getParent().getDisplay().getActiveShell(), clusterInfo, server.clusterConnector);
+				} catch (Exception excp) {
+					excp.printStackTrace();
+					return;
+				}
+				
+				int dialogResult = infobaseDialog.open();
+				if (dialogResult == 0) {
+					IInfoBaseInfoShort infoBaseInfoShort = server.clusterConnector
+							.getInfoBaseShortInfo(clusterInfo.getClusterId(), infobaseDialog.getNewInfobaseUUID());
+					addInfobaseItemInServersTree(item[0], infoBaseInfoShort);
+				}
+			}
+		});
+		
+		// set active menu
+		serversTree.setMenu(serverMenu);
 	}
 	
 
@@ -477,17 +649,19 @@ public class ViewerArea extends Composite {
 		
 	}
 	
-	private void fillInfobaseOfServer(TreeItem serverItem, Server serverConfig) {
-		// Удалить все базы из списка
-		TreeItem[] ibItems = serverItem.getItems();
+	private void fillInfobaseOfCluster(TreeItem clusterItem, Server server) {
+		
+		// Пока что удалить все базы из списка, может лучше добавить недостающие?
+		TreeItem[] ibItems = clusterItem.getItems();
 		for (TreeItem treeItem : ibItems) {
 			treeItem.dispose();
 		}
 
 		//debug
 //		List<IInfoBaseInfo> infoBases = serverConfig.getInfoBases();
-		List<IInfoBaseInfoShort> infoBases = serverConfig.clusterConnector.getInfoBasesShort(serverConfig.clusterID); // краткая инфа - ID, имя, описание
 		//debug
+		IClusterInfo clusterInfo = (IClusterInfo) clusterItem.getData("ClusterInfo");
+		List<IInfoBaseInfoShort> infoBases = server.getInfoBasesShort(clusterInfo.getClusterId()); // краткая инфа - ID, имя, описание
 		
 		
 //		serverConfig.getInfoBases().forEach(infoBaseInfo-> {
@@ -498,9 +672,9 @@ public class ViewerArea extends Composite {
 //			IInfoBaseInfoShort infoBasesShortInfo = serverConfig.clusterConnector.getInfoBaseShortInfo(serverConfig.clusterID, infoBaseInfo.getInfoBaseId());
 			//debug
 			
-			addInfobaseItemInServersTree(serverItem, infoBaseInfo);
+			addInfobaseItemInServersTree(clusterItem, infoBaseInfo);
 		});
-		serverItem.setExpanded(true);
+		clusterItem.setExpanded(true);
 
 	}
 
@@ -518,13 +692,25 @@ public class ViewerArea extends Composite {
 		} else {
 			item.setImage(serverIconDown);
 		}
-		item.setChecked(false);
+		item.setChecked(config.autoconnect);
 		
 		return item;
 	}
 	
-	private void addInfobaseItemInServersTree(TreeItem serverItem, IInfoBaseInfoShort ibs) {
+	private TreeItem addClusterItemInServersTree(TreeItem serverItem, IClusterInfo clusterInfo) {
 		TreeItem item = new TreeItem(serverItem, SWT.NONE);
+		
+		item.setText(new String[] { clusterInfo.getName()});//, config.getRemoteRasPortAsString() });
+		item.setData("Type", "Cluster");
+		item.setData("ClusterName", clusterInfo.getName()); // del
+		item.setData("ClusterInfo", clusterInfo);
+		item.setImage(clusterIcon);
+		
+		return item;
+	}
+	
+	private void addInfobaseItemInServersTree(TreeItem clusterItem, IInfoBaseInfoShort ibs) {
+		TreeItem item = new TreeItem(clusterItem, SWT.NONE);
 		
 		item.setText(new String[] { ibs.getName()});
 		item.setData("Type", "Infobase");
@@ -601,9 +787,10 @@ public class ViewerArea extends Composite {
 				for (TableItem item : selectedItems) {
 					item.setForeground(new Color(150,0,0));
 					
+					IClusterInfo clusterInfo = (IClusterInfo) item.getData("ClusterInfo");
 					ISessionInfo sessionInfo = (ISessionInfo) item.getData("SessionInfo");
 					Server server = (Server) item.getData("ServerConfig");
-					server.terminateSession(sessionInfo.getSid());
+					server.terminateSession(clusterInfo.getClusterId(), sessionInfo.getSid());
 				}
 				
 			}
@@ -694,7 +881,9 @@ public class ViewerArea extends Composite {
 		serverIcon = getImage(getParent().getDisplay(), "/server_24.png");
 		serverIconUp = getImage(getParent().getDisplay(), "/server_up_24.png");
 		serverIconDown = getImage(getParent().getDisplay(), "/server_down_24.png");
-		infobaseIcon = getImage(getParent().getDisplay(), "/infobase_24.png");
+		infobaseIcon = getImage(getParent().getDisplay(), "/infobase_16.png");
+		clusterIcon = getImage(getParent().getDisplay(), "/cluster_24.png");
+		
 //		serverIcon = getImage(mainForm.getDisplay(), "/icons/server_24.png");
 //		serverIconUp = getImage(mainForm.getDisplay(), "/icons/server_up_24.png");
 //		serverIconDown = getImage(mainForm.getDisplay(), "/icons/server_down_24.png");

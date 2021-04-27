@@ -1,5 +1,6 @@
 package ru.yanygin.clusterAdminLibraryUI;
 
+import java.util.Calendar;
 import java.util.Date;
 
 import org.eclipse.jface.dialogs.Dialog;
@@ -12,7 +13,11 @@ import org.eclipse.swt.widgets.Text;
 
 import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
+import com._1c.v8.ibis.admin.InfoBaseInfo;
+
 import ru.yanygin.clusterAdminLibrary.ClusterConnector;
+import ru.yanygin.clusterAdminLibrary.Config.Server;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.layout.GridLayout;
@@ -23,10 +28,13 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.custom.StackLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.DateTime;
 
-public class EditInfobaseDialog extends Dialog {
+public class EditClusterDialog extends Dialog {
 	
 	private IInfoBaseInfo infoBaseInfo;
 	private IClusterInfo clusterInfo;
@@ -59,7 +67,7 @@ public class EditInfobaseDialog extends Dialog {
 	// fields of infobase
 	private String infobaseName;
 	private String infobaseDescription;
-	private String securityLevel;
+	private String secureConnection;
 	
 	private String serverDBName;
 	private String serverDBType; // MSSQLServer, PostgreSQL, (?IBM DB2), (?Oracle Database)
@@ -92,7 +100,7 @@ public class EditInfobaseDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public EditInfobaseDialog(Shell parentShell, IInfoBaseInfo infoBaseInfo, IClusterInfo clusterInfo, ClusterConnector clusterConnector) {
+	public EditClusterDialog(Shell parentShell, IInfoBaseInfo infoBaseInfo, IClusterInfo clusterInfo, ClusterConnector clusterConnector) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
@@ -402,7 +410,7 @@ public class EditInfobaseDialog extends Dialog {
 		// Common properties
 		infobaseName 			= txtInfobaseName.getText();
 		infobaseDescription 	= txtInfobaseDescription.getText();
-		securityLevel 			= txtSecurityLevel.getText();
+		secureConnection 		= txtSecurityLevel.getText();
 		allowDistributeLicense 	= btnAllowDistributeLicense.getSelection() ? 1 : 0;
 		sheduledJobsDenied 		= btnSheduledJobsDenied.getSelection();
 		
