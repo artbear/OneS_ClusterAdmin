@@ -48,7 +48,7 @@ public class CreateInfobaseDialog extends Dialog {
 	private Text txtDatabaseDbUser;
 	private Text txtDatabaseDbPassword;
 	private Text txtInfobaseDescription;
-	private Combo txtSecurityLevel;
+	private Combo comboSecurityLevel;
 	private Combo comboServerDBType;
 	private Label lblLocale;
 	private Combo comboLocale; // Откуда то загрузить все возможные локали
@@ -130,20 +130,20 @@ public class CreateInfobaseDialog extends Dialog {
 		lblSecurityLevel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblSecurityLevel.setText("Security level");
 		
-		txtSecurityLevel = new Combo(container, SWT.BORDER);
-//		txtSecurityLevel.setItems(new String[] {"Disable", "Connection only", "Constantly"});
-		txtSecurityLevel.setToolTipText("Security level");
-		txtSecurityLevel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		txtSecurityLevel.setText("Disable");
+		comboSecurityLevel = new Combo(container, SWT.READ_ONLY);
+		comboSecurityLevel.setToolTipText("Security level");
+		comboSecurityLevel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		comboSecurityLevel.setText("Disable");
 		
 //		securityLevels.forEach(version -> {
-		txtSecurityLevel.add("Disable");
-		txtSecurityLevel.setData("Disable", 0);
-		txtSecurityLevel.add("Connection only");
-		txtSecurityLevel.setData("Connection only", 1);
-		txtSecurityLevel.add("Constantly");
-		txtSecurityLevel.setData("Constantly", 2);
+		comboSecurityLevel.add("Disable");
+		comboSecurityLevel.setData("Disable", 0);
+		comboSecurityLevel.add("Connection only");
+		comboSecurityLevel.setData("Connection only", 1);
+		comboSecurityLevel.add("Constantly");
+		comboSecurityLevel.setData("Constantly", 2);
 //		});
+		comboSecurityLevel.select(0);
 		
 		
 		Label lblServerDBName = new Label(container, SWT.NONE);
@@ -158,9 +158,16 @@ public class CreateInfobaseDialog extends Dialog {
 		lblServerDBType.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblServerDBType.setText("DBMS type");
 		
-		comboServerDBType = new Combo(container, SWT.NONE);
-		comboServerDBType.setItems(new String[] {"MSSQLServer", "PostgreSQL", "IBMDB2", "OracleDatabase"});
+		comboServerDBType = new Combo(container, SWT.READ_ONLY);
+//		comboServerDBType.setItems(new String[] {"MSSQLServer", "PostgreSQL", "IBMDB2", "OracleDatabase"});
 		comboServerDBType.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+
+		comboServerDBType.add("MSSQLServer");
+		comboServerDBType.add("PostgreSQL");
+		comboServerDBType.add("IBMDB2");
+		comboServerDBType.add("OracleDatabase");
+		comboServerDBType.select(0);
+
 		comboServerDBType.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -202,15 +209,16 @@ public class CreateInfobaseDialog extends Dialog {
 		lblLocale.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblLocale.setText("Locale");
 		
-		comboLocale = new Combo(container, SWT.NONE);
+		comboLocale = new Combo(container, SWT.READ_ONLY);
 		comboLocale.setItems(new String[] {"ru_RU", "en_US", "xx_XX", "yy_YY"});
 		comboLocale.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		comboLocale.select(0);
 		
 		Label lblDateOffset = new Label(container, SWT.NONE);
 		lblDateOffset.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblDateOffset.setText("Date offset");
 		
-		comboDateOffset = new Combo(container, SWT.NONE);
+		comboDateOffset = new Combo(container, SWT.READ_ONLY);
 		comboDateOffset.setItems(new String[] {"0", "2000"});
 		comboDateOffset.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		comboDateOffset.setText("2000");
@@ -291,7 +299,6 @@ public class CreateInfobaseDialog extends Dialog {
 
 			try {
 				newInfobaseUUID = clusterConnector.createInfoBase(clusterInfo.getClusterId(), infoBaseInfo, (infobaseCreationMode ? 1 : 0));
-				close();
 			} catch (Exception excp) {
 				excp.printStackTrace();
 				MessageBox messageBox = new MessageBox(getParentShell());
@@ -306,7 +313,7 @@ public class CreateInfobaseDialog extends Dialog {
 		// Common properties
 		infobaseName 			= txtInfobaseName.getText();
 		infobaseDescription 	= txtInfobaseDescription.getText();
-		switch (txtSecurityLevel.getText()) {
+		switch (comboSecurityLevel.getText()) {
 		case "Disable":
 			securityLevel 		= 0;
 			break;
@@ -359,6 +366,7 @@ public class CreateInfobaseDialog extends Dialog {
 			public void widgetSelected(SelectionEvent e) {
 				extractInfobaseVariablesFromControls();
 				saveNewServerProperties();
+				close();
 			}
 		});
 		

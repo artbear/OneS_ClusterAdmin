@@ -11,6 +11,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import com._1c.v8.ibis.admin.ClusterInfo;
 import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.InfoBaseInfo;
@@ -20,6 +21,7 @@ import ru.yanygin.clusterAdminLibrary.Config.Server;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
@@ -36,63 +38,52 @@ import org.eclipse.swt.widgets.DateTime;
 
 public class EditClusterDialog extends Dialog {
 	
-	private IInfoBaseInfo infoBaseInfo;
 	private IClusterInfo clusterInfo;
 	private ClusterConnector clusterConnector;
 	
-	// Controls
-	private Button btnSessionsDenied;
-	private Button btnSheduledJobsDenied;
-	private Button btnAllowDistributeLicense;
-	private Button btnExternalSessionManagerRequired;
-	private Text txtInfobaseName;
-	private Text txtServerDBName;
-	private Text txtDatabaseDbName;
-	private Text txtDatabaseDbUser;
-	private Text txtDatabaseDbPassword;
-	private Text txtInfobaseDescription;
-	private Text txtSecurityLevel;
-	private Text txtPermissionCode;
-	private Text txtDeniedParameter;
-	private Text txtExternalSessionManagerConnectionString;
-	private Text txtSecurityProfile;
-	private Text txtSafeModeSecurityProfile;
-	private Text txtDeniedMessage;
-	private Combo comboServerDBType;
-	private DateTime deniedFromDate;
-	private DateTime deniedFromTime;
-	private DateTime deniedToDate;
-	private DateTime deniedToTime;
+	private Button btnClusterRecyclingKillProblemProcesses;
+	private Text txtClusterName;
+	private Text txtComputerName;
+	private Text txtIPPort;
+	private Combo comboSecurityLevel;
 
 	// fields of infobase
-	private String infobaseName;
-	private String infobaseDescription;
-	private String secureConnection;
+	private String clusterName;
+	private String computerName;
+	private int ipPort;
+	private int securityLevel;
 	
-	private String serverDBName;
-	private String serverDBType; // MSSQLServer, PostgreSQL, (?IBM DB2), (?Oracle Database)
-	private String databaseDbName;
-	private String databaseDbUser;
-	private String databaseDbPassword;
+	private int wpLifeTimeLimit;
+	private int wpMaxMemorySize;
+	private int wpMaxMemoryTimeLimit;
+	private int clusterRecyclingErrorsCountThreshold;
+	private boolean clusterRecyclingKillProblemProcesses;
 	
-	private int allowDistributeLicense;
+	private int expirationTimeout;
+	private int faultToleranceLevel;
+	private int loadBalancingMode;
 	
-	private boolean sessionsDenied;
-	private Date sessionsDeniedFrom;
-//	private String lockStartTime;
-	private Date sessionsDeniedTo;
-//	private String lockStopTime;
-	private String deniedMessage;
-	private String permissionCode;
-	private String deniedParameter;
-	
-	private boolean sheduledJobsDenied;
-	
-	private String externalSessionManagerConnectionString;
-	private boolean externalSessionManagerRequired;
-	
-	private String securityProfile;
-	private String safeModeSecurityProfile;
+	private Label lblComputerName;
+	private Group groupWorkProcessesParams;
+	private Label lblRestartInterval;
+	private Text txtWpLifeTimeLimit;
+	private Label lblAllowedAmountOfMemory;
+	private Text txtWpMaxMemorySize;
+	private Label lblIntervalExceedingAllowedAmountOfMemory;
+	private Text txtWpMaxMemoryTimeLimit;
+	private Label lblAcceptableDeviationOfNumberOfServerErrors;
+	private Text txtClusterRecyclingErrorsCountThreshold;
+	private Label lblUnitSeconds1;
+	private Label lblUnitSeconds2;
+	private Label lblUnitProcents;
+	private Label lblUnitByte;
+	private Label lblShutDownProcessesStopAfter;
+	private Text txtExpirationTimeout;
+	private Label lblUnitSeconds1_1;
+	private Label lblFaultToleranceLevel;
+	private Text txtSessionFaultToleranceLevel;
+	private Label lblLoadBalancingMode;
+	private Combo comboLoadBalancingMode;
 	
 
 	/**
@@ -100,14 +91,13 @@ public class EditClusterDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public EditClusterDialog(Shell parentShell, IInfoBaseInfo infoBaseInfo, IClusterInfo clusterInfo, ClusterConnector clusterConnector) {
+	public EditClusterDialog(Shell parentShell, IClusterInfo clusterInfo, ClusterConnector clusterConnector) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
 //		super.configureShell(parentShell);
 //		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 	    
-		this.infoBaseInfo = infoBaseInfo;
 		this.clusterInfo = clusterInfo;
 		this.clusterConnector = clusterConnector;
 	}
@@ -120,334 +110,244 @@ public class EditClusterDialog extends Dialog {
 	protected Control createDialogArea(Composite parent) {
 		parent.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
-				extractInfobaseVariablesFromControls();
+//				extractClusterVariablesFromControls();
 			}
 		});
 		Composite container = (Composite) super.createDialogArea(parent);
 		GridLayout gridLayout = (GridLayout) container.getLayout();
-		gridLayout.numColumns = 2;
+		gridLayout.numColumns = 3;
 		
-		Label lblInfobaseName = new Label(container, SWT.NONE);
-		lblInfobaseName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblInfobaseName.setText("Infobase name");
+		Label lblClusterName = new Label(container, SWT.NONE);
+		lblClusterName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblClusterName.setText("Cluster name");
 		
-		txtInfobaseName = new Text(container, SWT.BORDER);
-		txtInfobaseName.setToolTipText("Infobase name");
-		txtInfobaseName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtClusterName = new Text(container, SWT.BORDER);
+		txtClusterName.setToolTipText("Cluster name");
+		txtClusterName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
 		
-		Label lblInfobaseDescription = new Label(container, SWT.NONE);
-		lblInfobaseDescription.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblInfobaseDescription.setText("Description");
+		lblComputerName = new Label(container, SWT.NONE);
+		lblComputerName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblComputerName.setText("Computer name");
 		
-		txtInfobaseDescription = new Text(container, SWT.BORDER);
-		txtInfobaseDescription.setToolTipText("Description");
-		txtInfobaseDescription.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtComputerName = new Text(container, SWT.BORDER);
+		txtComputerName.setToolTipText("Computer Name");
+		txtComputerName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
+		
+		Label lblIPPort = new Label(container, SWT.NONE);
+		lblIPPort.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblIPPort.setText("IP Port");
+		
+		txtIPPort = new Text(container, SWT.BORDER);
+		txtIPPort.setToolTipText("IP Port");
+		txtIPPort.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
 		
 		Label lblSecurityLevel = new Label(container, SWT.NONE);
 		lblSecurityLevel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 //		lblSecurityLevel.setToolTipText("");
 		lblSecurityLevel.setText("Security level");
 		
-		txtSecurityLevel = new Text(container, SWT.BORDER);
-		txtSecurityLevel.setEditable(false);
-		txtSecurityLevel.setTouchEnabled(true);
-		txtSecurityLevel.setToolTipText("Security level");
-		txtSecurityLevel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		comboSecurityLevel = new Combo(container, SWT.READ_ONLY);
+		comboSecurityLevel.setVisibleItemCount(3);
+		comboSecurityLevel.setTouchEnabled(true);
+		comboSecurityLevel.setToolTipText("Security level");
+		comboSecurityLevel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		Label lblServerDBName = new Label(container, SWT.NONE);
-		lblServerDBName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblServerDBName.setText("Server DB name");
-		
-		txtServerDBName = new Text(container, SWT.BORDER);
-		txtServerDBName.setToolTipText("Server DB name");
-		txtServerDBName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		
-		Label lblServerDBType = new Label(container, SWT.NONE);
-		lblServerDBType.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblServerDBType.setText("DBMS type");
-		
-		comboServerDBType = new Combo(container, SWT.NONE);
-		comboServerDBType.setItems(new String[] {"MSSQLServer", "PostgreSQL", "(?IBM DB2)", "(?Oracle Database)"});
-		comboServerDBType.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		
-		Label lblDatabaseDbName = new Label(container, SWT.NONE);
-		lblDatabaseDbName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblDatabaseDbName.setText("Database DB name");
-		
-		txtDatabaseDbName = new Text(container, SWT.BORDER);
-		txtDatabaseDbName.setToolTipText("Database DB name");
-		txtDatabaseDbName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		
-		Label lblDatabaseDbUser = new Label(container, SWT.NONE);
-		lblDatabaseDbUser.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblDatabaseDbUser.setText("Database DB user");
-		
-		txtDatabaseDbUser = new Text(container, SWT.BORDER);
-		txtDatabaseDbUser.setToolTipText("Database DB user");
-		txtDatabaseDbUser.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		
-		Label lblDatabaseDbPassword = new Label(container, SWT.NONE);
-		lblDatabaseDbPassword.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblDatabaseDbPassword.setAlignment(SWT.RIGHT);
-		lblDatabaseDbPassword.setText("Database DB password");
-		
-		txtDatabaseDbPassword = new Text(container, SWT.BORDER | SWT.PASSWORD);
-		txtDatabaseDbPassword.setToolTipText("Database DB password");
-		txtDatabaseDbPassword.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		new Label(container, SWT.NONE);
-		
-		btnAllowDistributeLicense = new Button(container, SWT.CHECK);
-		btnAllowDistributeLicense.setText("Allow distribute license at 1C:Enterprise server");
-		new Label(container, SWT.NONE);
-		
-		btnSessionsDenied = new Button(container, SWT.CHECK);
-		btnSessionsDenied.setText("Sessions denied");
-		
-		Label lblDeniedFrom = new Label(container, SWT.NONE);
-		lblDeniedFrom.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblDeniedFrom.setText("Denied from:");
-		
-		Composite compositeDeniedFrom = new Composite(container, SWT.NONE);
-		compositeDeniedFrom.setLayout(new FillLayout(SWT.HORIZONTAL));
-		
-		deniedFromDate = new DateTime(compositeDeniedFrom, SWT.BORDER | SWT.DATE | SWT.DROP_DOWN);
-		
-		deniedFromTime = new DateTime(compositeDeniedFrom, SWT.BORDER | SWT.TIME);
-		
-		Label lblDeniedTo = new Label(container, SWT.NONE);
-		lblDeniedTo.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblDeniedTo.setText("Denied to:");
-		
-		Composite compositeDeniedTo = new Composite(container, SWT.NONE);
-		compositeDeniedTo.setLayout(new FillLayout(SWT.HORIZONTAL));
-		
-		deniedToDate = new DateTime(compositeDeniedTo, SWT.NONE | SWT.DROP_DOWN);
-		
-		deniedToTime = new DateTime(compositeDeniedTo, SWT.BORDER | SWT.TIME);
+		comboSecurityLevel.add("Disable");
+		comboSecurityLevel.setData("Disable", 0);
+		comboSecurityLevel.add("Connection only");
+		comboSecurityLevel.setData("Connection only", 1);
+		comboSecurityLevel.add("Constantly");
+		comboSecurityLevel.setData("Constantly", 2);
+		comboSecurityLevel.select(0);
 
-		Label lblDeniedMessage = new Label(container, SWT.NONE);
-		lblDeniedMessage.setText("Denied message:");
-		
-		txtDeniedMessage = new Text(container, SWT.BORDER);
-		txtDeniedMessage.setToolTipText("Denied message");
-		GridData gd_txtDeniedMessage = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
-		gd_txtDeniedMessage.heightHint = 63;
-		txtDeniedMessage.setLayoutData(gd_txtDeniedMessage);
-		
-		Label lblPermissionCode = new Label(container, SWT.NONE);
-		lblPermissionCode.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblPermissionCode.setText("Permission code:");
-		
-		txtPermissionCode = new Text(container, SWT.BORDER);
-		txtPermissionCode.setToolTipText("Permission code");
-		txtPermissionCode.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		
-		Label lblDeniedParameter = new Label(container, SWT.NONE);
-		lblDeniedParameter.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblDeniedParameter.setText("Denied parameter");
-		
-		txtDeniedParameter = new Text(container, SWT.BORDER);
-		txtDeniedParameter.setToolTipText("Denied parameter");
-		txtDeniedParameter.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		new Label(container, SWT.NONE);
 		
-		btnSheduledJobsDenied = new Button(container, SWT.CHECK);
-		btnSheduledJobsDenied.setText("Sheduled jobs denied");
+		groupWorkProcessesParams = new Group(container, SWT.NONE);
+		groupWorkProcessesParams.setText("Restart Work Processes");
+		groupWorkProcessesParams.setLayout(new GridLayout(3, false));
+		groupWorkProcessesParams.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 3, 1));
 		
-		Label lblExternalSessionManagerConnectionString = new Label(container, SWT.NONE);
-		lblExternalSessionManagerConnectionString.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblExternalSessionManagerConnectionString.setText("External session management");
+		lblRestartInterval = new Label(groupWorkProcessesParams, SWT.NONE);
+		lblRestartInterval.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblRestartInterval.setText("Restart Interval");
 		
-		txtExternalSessionManagerConnectionString = new Text(container, SWT.BORDER);
-		txtExternalSessionManagerConnectionString.setToolTipText("External session management");
-		txtExternalSessionManagerConnectionString.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		txtWpLifeTimeLimit = new Text(groupWorkProcessesParams, SWT.BORDER);
+		txtWpLifeTimeLimit.setToolTipText("Restart Interval");
+		
+		lblUnitSeconds1 = new Label(groupWorkProcessesParams, SWT.NONE);
+		lblUnitSeconds1.setText("seconds");
+		
+		lblAllowedAmountOfMemory = new Label(groupWorkProcessesParams, SWT.NONE);
+		lblAllowedAmountOfMemory.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblAllowedAmountOfMemory.setText("Allowed Amount Of Memory");
+		lblAllowedAmountOfMemory.setBounds(0, 0, 35, 15);
+		
+		txtWpMaxMemorySize = new Text(groupWorkProcessesParams, SWT.BORDER);
+		txtWpMaxMemorySize.setToolTipText("Allowed Amount Of Memory");
+		txtWpMaxMemorySize.setBounds(0, 0, 76, 21);
+		
+		lblUnitByte = new Label(groupWorkProcessesParams, SWT.NONE);
+		lblUnitByte.setText("KB");
+		
+		lblIntervalExceedingAllowedAmountOfMemory = new Label(groupWorkProcessesParams, SWT.WRAP);
+		lblIntervalExceedingAllowedAmountOfMemory.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblIntervalExceedingAllowedAmountOfMemory.setText("Interval Exceeding Allowed Amount Of Memory");
+		lblIntervalExceedingAllowedAmountOfMemory.setBounds(0, 0, 35, 15);
+		
+		txtWpMaxMemoryTimeLimit = new Text(groupWorkProcessesParams, SWT.BORDER);
+		txtWpMaxMemoryTimeLimit.setToolTipText("Interval Exceeding Allowed Amount Of Memory");
+		txtWpMaxMemoryTimeLimit.setBounds(0, 0, 76, 21);
+		
+		lblUnitSeconds2 = new Label(groupWorkProcessesParams, SWT.NONE);
+		lblUnitSeconds2.setText("seconds");
+		
+		lblAcceptableDeviationOfNumberOfServerErrors = new Label(groupWorkProcessesParams, SWT.WRAP);
+		lblAcceptableDeviationOfNumberOfServerErrors.setLayoutData(new GridData(SWT.RIGHT, SWT.TOP, false, false, 1, 1));
+		lblAcceptableDeviationOfNumberOfServerErrors.setText("Acceptable deviation of the number of server errors");
+		lblAcceptableDeviationOfNumberOfServerErrors.setBounds(0, 0, 35, 15);
+		
+		txtClusterRecyclingErrorsCountThreshold = new Text(groupWorkProcessesParams, SWT.BORDER);
+		txtClusterRecyclingErrorsCountThreshold.setToolTipText("Acceptable deviation of the number of server errors");
+		txtClusterRecyclingErrorsCountThreshold.setBounds(0, 0, 76, 21);
+		
+		lblUnitProcents = new Label(groupWorkProcessesParams, SWT.NONE);
+		lblUnitProcents.setText("%");
+		
+		btnClusterRecyclingKillProblemProcesses = new Button(groupWorkProcessesParams, SWT.CHECK);
+		btnClusterRecyclingKillProblemProcesses.setText("Force shutdown of problematic processes");
+		new Label(groupWorkProcessesParams, SWT.NONE);
+		new Label(groupWorkProcessesParams, SWT.NONE);
+		
+		lblShutDownProcessesStopAfter = new Label(container, SWT.NONE);
+		lblShutDownProcessesStopAfter.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblShutDownProcessesStopAfter.setText("Shut down processes stop after");
+		
+		txtExpirationTimeout = new Text(container, SWT.BORDER);
+		txtExpirationTimeout.setToolTipText("Shut down processes stop after");
+		txtExpirationTimeout.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		
+		lblUnitSeconds1_1 = new Label(container, SWT.NONE);
+		lblUnitSeconds1_1.setToolTipText("");
+		lblUnitSeconds1_1.setText("seconds");
+		
+		lblFaultToleranceLevel = new Label(container, SWT.NONE);
+		lblFaultToleranceLevel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblFaultToleranceLevel.setText("Fault tolerance level");
+		
+		txtSessionFaultToleranceLevel = new Text(container, SWT.BORDER);
+		txtSessionFaultToleranceLevel.setToolTipText("Fault tolerance level");
+		txtSessionFaultToleranceLevel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		new Label(container, SWT.NONE);
 		
-		btnExternalSessionManagerRequired = new Button(container, SWT.CHECK);
-		btnExternalSessionManagerRequired.setText("Required use of external management");
+		lblLoadBalancingMode = new Label(container, SWT.NONE);
+		lblLoadBalancingMode.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblLoadBalancingMode.setText("Load balancing mode");
 		
-		Label lblSecurityProfile = new Label(container, SWT.NONE);
-		lblSecurityProfile.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblSecurityProfile.setText("Security profile");
+		comboLoadBalancingMode = new Combo(container, SWT.READ_ONLY);
+		comboLoadBalancingMode.setVisibleItemCount(2);
+		comboLoadBalancingMode.setToolTipText("Load balancing mode");
+		comboLoadBalancingMode.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		txtSecurityProfile = new Text(container, SWT.BORDER);
-		txtSecurityProfile.setToolTipText("Security profile");
-		txtSecurityProfile.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		comboLoadBalancingMode.add("Performance priority"); // Приоритет по производительности
+		comboLoadBalancingMode.setData("Performance priority", 0);
+		comboLoadBalancingMode.add("Memory priority"); // Приоритет по памяти
+		comboLoadBalancingMode.setData("Memory priority", 1);
+		comboLoadBalancingMode.select(0);
 		
-		Label lblSafeModeSecurityProfile = new Label(container, SWT.NONE);
-		lblSafeModeSecurityProfile.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblSafeModeSecurityProfile.setText("Safe mode security profile");
-		
-		txtSafeModeSecurityProfile = new Text(container, SWT.BORDER);
-		txtSafeModeSecurityProfile.setToolTipText("Safe mode security profile");
-		txtSafeModeSecurityProfile.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		new Label(container, SWT.NONE);
 
 		initServerProperties();
 
+		// У уже созданного кластера запрещено менять хост и порт
+		if (clusterInfo != null) {
+			txtComputerName.setEditable(false);
+			txtIPPort.setEditable(false);
+		}
 		
 		return container;
 	}
 
 	private void initServerProperties() {
-		if (infoBaseInfo != null) {
+		if (clusterInfo != null) {
 			
 			// Common properties
-			this.txtInfobaseName.setText(infoBaseInfo.getName());
-			this.txtInfobaseDescription.setText(infoBaseInfo.getDescr());
-			this.txtSecurityLevel.setText(Integer.toString(infoBaseInfo.getSecurityLevel()));
-			this.btnAllowDistributeLicense.setSelection(infoBaseInfo.getLicenseDistributionAllowed() == 1);
-			this.btnSheduledJobsDenied.setSelection(infoBaseInfo.isScheduledJobsDenied());
+			this.txtClusterName.setText(clusterInfo.getName());
+			this.txtComputerName.setText(clusterInfo.getHostName());
+			this.txtIPPort.setText(Integer.toString(clusterInfo.getMainPort()));
+			this.comboSecurityLevel.select(clusterInfo.getSecurityLevel());
 			
-			// DB properties
-			this.txtServerDBName.setText(infoBaseInfo.getDbServerName());
-			this.comboServerDBType.setText(infoBaseInfo.getDbms());
-			this.txtDatabaseDbName.setText(infoBaseInfo.getDbName());
-			this.txtDatabaseDbUser.setText(infoBaseInfo.getDbUser());
-			this.txtDatabaseDbPassword.setText(infoBaseInfo.getDbPassword());
-			
-			// Lock properties
-			this.btnSessionsDenied.setSelection(infoBaseInfo.isSessionsDenied());
-			
-			Date deniedFrom = infoBaseInfo.getDeniedFrom();
-			this.deniedFromDate.setDate(1900 + deniedFrom.getYear(), deniedFrom.getMonth(), deniedFrom.getDate());
-			this.deniedFromTime.setTime(deniedFrom.getHours(), deniedFrom.getMinutes(), deniedFrom.getSeconds());
-			
-			Date deniedTo  	= infoBaseInfo.getDeniedTo();
-			this.deniedToDate.setDate(1900 + deniedTo.getYear(), deniedTo.getMonth(), deniedTo.getDate());
-			this.deniedToTime.setTime(deniedTo.getHours(), deniedTo.getMinutes(), deniedTo.getSeconds());
-			
-			this.txtDeniedMessage.setText(infoBaseInfo.getDeniedMessage());
-			this.txtPermissionCode.setText(infoBaseInfo.getPermissionCode());
-			this.txtDeniedParameter.setText(infoBaseInfo.getDeniedParameter());
-			
-			// ExternalSessionManager properties
-			this.txtExternalSessionManagerConnectionString.setText(infoBaseInfo.getExternalSessionManagerConnectionString());
-			this.btnExternalSessionManagerRequired.setSelection(infoBaseInfo.getExternalSessionManagerRequired());
-			
-			// SecurityProfile properties			
-			this.txtSecurityProfile.setText(infoBaseInfo.getSecurityProfileName());
-			this.txtSafeModeSecurityProfile.setText(infoBaseInfo.getSafeModeSecurityProfileName());
-			
+			this.txtWpLifeTimeLimit.setText(Integer.toString(clusterInfo.getLifeTimeLimit()));
+			this.txtWpMaxMemorySize.setText(Integer.toString(clusterInfo.getMaxMemorySize()));
+			this.txtWpMaxMemoryTimeLimit.setText(Integer.toString(clusterInfo.getMaxMemoryTimeLimit()));
+			this.txtClusterRecyclingErrorsCountThreshold.setText(Integer.toString(clusterInfo.getClusterRecyclingErrorsCountThreshold()));
+			this.btnClusterRecyclingKillProblemProcesses.setSelection(clusterInfo.isClusterRecyclingKillProblemProcesses());
+
+//			this.btnClusterRecyclingKillByMemoryWithDump.setSelection(clusterInfo.isClusterRecyclingKillByMemoryWithDump()); // что это?
+						
+			this.txtExpirationTimeout.setText(Integer.toString(clusterInfo.getExpirationTimeout()));
+			this.txtSessionFaultToleranceLevel.setText(Integer.toString(clusterInfo.getSessionFaultToleranceLevel()));
+			this.comboLoadBalancingMode.select(clusterInfo.getLoadBalancingMode());
 			
 		}
 	}
 
 	private void saveNewServerProperties() {
-		if (infoBaseInfo != null) {
-			
-			// Common properties
-			if (!infobaseName.equals(infoBaseInfo.getName()))
-				infoBaseInfo.setName(infobaseName);
-			
-			if (!infobaseDescription.equals(infoBaseInfo.getDescr()))
-				infoBaseInfo.setDescr(infobaseDescription);
-			
-			if (allowDistributeLicense != infoBaseInfo.getLicenseDistributionAllowed())
-				infoBaseInfo.setLicenseDistributionAllowed(allowDistributeLicense);
-			
-			if (sheduledJobsDenied != infoBaseInfo.isScheduledJobsDenied())
-				infoBaseInfo.setScheduledJobsDenied(sheduledJobsDenied);
-			
-//			if (secureConnection != infoBaseInfo.getSecurityLevel()) // не меняется
-//				infoBaseInfo.se(secureConnection);
-			
-			// DB properties
-			if (!serverDBName.equals(infoBaseInfo.getDbServerName()))
-				infoBaseInfo.setDbServerName(serverDBName);
-			
-			if (!serverDBType.equals(infoBaseInfo.getDbms()))
-				infoBaseInfo.setDbms(serverDBType);
-			
-			if (!databaseDbName.equals(infoBaseInfo.getDbName()))
-				infoBaseInfo.setDbName(databaseDbName);
-			
-			if (!databaseDbUser.equals(infoBaseInfo.getDbUser()))
-				infoBaseInfo.setDbUser(databaseDbUser);
-			
-			if (!databaseDbPassword.equals(infoBaseInfo.getDbPassword()))
-				infoBaseInfo.setDbPassword(databaseDbPassword);
-			
-			// Lock properties
-			if (sessionsDenied != infoBaseInfo.isSessionsDenied())
-				infoBaseInfo.setSessionsDenied(sessionsDenied);
-			
-			if (sessionsDeniedFrom != infoBaseInfo.getDeniedFrom())
-				infoBaseInfo.setDeniedFrom(sessionsDeniedFrom);
-			
-			if (sessionsDeniedTo != infoBaseInfo.getDeniedTo())
-				infoBaseInfo.setDeniedTo(sessionsDeniedTo);
-			
-			if (deniedMessage != infoBaseInfo.getDeniedMessage())
-				infoBaseInfo.setDeniedMessage(deniedMessage);
-			
-			if (permissionCode != infoBaseInfo.getPermissionCode())
-				infoBaseInfo.setPermissionCode(permissionCode);
-			
-			if (deniedParameter != infoBaseInfo.getDeniedParameter())
-				infoBaseInfo.setDeniedParameter(deniedParameter);
-			
-			// ExternalSessionManager properties
-			if (externalSessionManagerConnectionString != infoBaseInfo.getExternalSessionManagerConnectionString())
-				infoBaseInfo.setExternalSessionManagerConnectionString(externalSessionManagerConnectionString);
-			
-			if (externalSessionManagerRequired != infoBaseInfo.getExternalSessionManagerRequired())
-				infoBaseInfo.setExternalSessionManagerRequired(externalSessionManagerRequired);
-			
-			// SecurityProfile properties			
-			if (securityProfile != infoBaseInfo.getSecurityProfileName())
-				infoBaseInfo.setSecurityProfileName(securityProfile);
-			
-			if (safeModeSecurityProfile != infoBaseInfo.getSafeModeSecurityProfileName())
-				infoBaseInfo.setSafeModeSecurityProfileName(safeModeSecurityProfile);
-			
-			clusterConnector.updateInfoBase(clusterInfo.getClusterId(), infoBaseInfo);
-			
+		if (clusterInfo == null) {
+			clusterInfo = new ClusterInfo();
+	
+			clusterInfo.setHostName(computerName); // только при создании нового?
+			clusterInfo.setMainPort(ipPort); // только при создании нового?
 		}
+		
+		clusterInfo.setName(clusterName);
+		clusterInfo.setSecurityLevel(securityLevel);
+
+		clusterInfo.setLifeTimeLimit(wpLifeTimeLimit);
+		clusterInfo.setMaxMemorySize(wpMaxMemorySize);
+		clusterInfo.setMaxMemoryTimeLimit(wpMaxMemoryTimeLimit);
+		clusterInfo.setClusterRecyclingErrorsCountThreshold(clusterRecyclingErrorsCountThreshold);
+		clusterInfo.setClusterRecyclingKillProblemProcesses(clusterRecyclingKillProblemProcesses);
+
+//		clusterInfo.setClusterRecyclingKillByMemoryWithDump(clusterRecyclingKillByMemoryWithDump);
+
+		clusterInfo.setExpirationTimeout(expirationTimeout);
+		clusterInfo.setSessionFaultToleranceLevel(faultToleranceLevel);
+		clusterInfo.setLoadBalancingMode(loadBalancingMode);
+
+		try {
+			clusterConnector.authenticateAgent("", "");
+			clusterConnector.regCluster(clusterInfo);
+		} catch (Exception excp) {
+			excp.printStackTrace();
+			MessageBox messageBox = new MessageBox(getParentShell());
+			messageBox.setMessage(excp.getLocalizedMessage());
+			messageBox.open();
+		}
+
 	}
 
-	private void extractInfobaseVariablesFromControls() {
+	private void extractClusterVariablesFromControls() {
 		
-		// Common properties
-		infobaseName 			= txtInfobaseName.getText();
-		infobaseDescription 	= txtInfobaseDescription.getText();
-		secureConnection 		= txtSecurityLevel.getText();
-		allowDistributeLicense 	= btnAllowDistributeLicense.getSelection() ? 1 : 0;
-		sheduledJobsDenied 		= btnSheduledJobsDenied.getSelection();
+		clusterName 	= txtClusterName.getText();
+		computerName 	= txtComputerName.getText();
+		ipPort 			= Integer.parseInt(txtIPPort.getText());
+		securityLevel 	= (int) comboSecurityLevel.getData(comboSecurityLevel.getText());
 		
-		// DB properties
-		serverDBName 		= txtServerDBName.getText();
-		serverDBType 		= comboServerDBType.getText();
-		databaseDbName 		= txtDatabaseDbName.getText();
-		databaseDbUser 		= txtDatabaseDbUser.getText();
-		databaseDbPassword 	= txtDatabaseDbPassword.getText();
+		wpLifeTimeLimit			= Integer.parseInt(txtWpLifeTimeLimit.getText());
+		wpMaxMemorySize			= Integer.parseInt(txtWpMaxMemorySize.getText());
+		wpMaxMemoryTimeLimit	= Integer.parseInt(txtWpMaxMemoryTimeLimit.getText());
+		clusterRecyclingErrorsCountThreshold = Integer.parseInt(txtClusterRecyclingErrorsCountThreshold.getText());
+		clusterRecyclingKillProblemProcesses = btnClusterRecyclingKillProblemProcesses.getSelection();
 		
-		// Lock properties
-		sessionsDenied 		= btnSessionsDenied.getSelection();
-		sessionsDeniedFrom 	= convertDateTime(deniedFromDate, deniedFromTime);
-		sessionsDeniedTo 	= convertDateTime(deniedToDate, deniedToTime);
-		deniedMessage 		= txtDeniedMessage.getText();
-		permissionCode 		= txtPermissionCode.getText();
-		deniedParameter 	= txtDeniedParameter.getText();
+//		clusterRecyclingKillByMemoryWithDump = btnClusterRecyclingKillByMemoryWithDump.getSelection(); // ?
 		
-		// ExternalSessionManager properties
-		externalSessionManagerConnectionString 	= txtExternalSessionManagerConnectionString.getText();
-		externalSessionManagerRequired 			= btnExternalSessionManagerRequired.getSelection();
+		expirationTimeout 	= Integer.parseInt(txtExpirationTimeout.getText());
+		faultToleranceLevel = Integer.parseInt(txtSessionFaultToleranceLevel.getText());
+		loadBalancingMode 	= (int) comboLoadBalancingMode.getData(comboLoadBalancingMode.getText());
 		
-		// SecurityProfile properties			
-		securityProfile 		= txtSecurityProfile.getText();
-		safeModeSecurityProfile = txtSafeModeSecurityProfile.getText();
-	}
-
-	private Date convertDateTime(DateTime date, DateTime time) {
-		
-		int year = date.getYear() - 1900; // чтото не так с конвертацией
-		int month = date.getMonth();
-		int day = date.getDay();
-		int hrs = time.getHours();
-		int min = time.getMinutes();
-		int sec = time.getSeconds();
-
-		return new Date(year, month, day, hrs, min, sec);
 	}
 	
 	/**
@@ -456,24 +356,34 @@ public class EditClusterDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		Button button = createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
-		button.addSelectionListener(new SelectionAdapter() {
+		Button buttonOK = createButton(parent, IDialogConstants.FINISH_ID, IDialogConstants.OK_LABEL, true);
+		buttonOK.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				extractClusterVariablesFromControls();
 				saveNewServerProperties();
+				close();
 			}
 		});
 		
 		createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
 		
-		Button buttonPr = createButton(parent, IDialogConstants.PROCEED_ID, "Apply", false);
-		buttonPr.addSelectionListener(new SelectionAdapter() {
+		Button buttonApply = createButton(parent, IDialogConstants.PROCEED_ID, "Apply", false);
+		buttonApply.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				extractInfobaseVariablesFromControls();
+				extractClusterVariablesFromControls();
 				saveNewServerProperties();
 			}
 		});
+		Button buttonReset = createButton(parent, IDialogConstants.PROCEED_ID, "Reset to PROF/CORP", false);
+		buttonReset.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+//				resetToProf();
+			}
+		});
+
 	}
 
 	/**
@@ -481,7 +391,7 @@ public class EditClusterDialog extends Dialog {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point(480, 740);
+		return new Point(493, 459);
 	}
 
 }

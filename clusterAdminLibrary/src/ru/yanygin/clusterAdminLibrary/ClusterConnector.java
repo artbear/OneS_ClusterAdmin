@@ -99,7 +99,17 @@ public final class ClusterConnector
 
 		connection.authenticate(clusterId, userName, password);
 	}
+	
+	public void authenticateAgent(String userName, String password)
+	{
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
 
+		connection.authenticateAgent(userName, password);
+	}
+	
 	/**
      * Adds infobase authentication parameters to the context 
      * of the current administration server connection
@@ -133,7 +143,27 @@ public final class ClusterConnector
 
         return connection.getClusters();
     }
+    
+    public UUID regCluster(IClusterInfo clusterInfo)
+    {
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
 
+        return connection.regCluster(clusterInfo);
+    }
+    
+    public IClusterInfo getClusterInfo(UUID clusterId)
+    {
+		if (connection == null)
+		{
+			throw new IllegalStateException("The connection is not established.");
+		}
+
+        return connection.getClusterInfo(clusterId);
+    }
+    
     /**
      * Gets the list of short descriptions of cluster infobases
      *

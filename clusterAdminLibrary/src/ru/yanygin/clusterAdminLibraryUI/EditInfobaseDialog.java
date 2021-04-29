@@ -62,7 +62,7 @@ public class EditInfobaseDialog extends Dialog {
 	private String securityLevel;
 	
 	private String serverDBName;
-	private String serverDBType; // MSSQLServer, PostgreSQL, (?IBM DB2), (?Oracle Database)
+	private String serverDBType; // MSSQLServer, PostgreSQL, IBMDB2, OracleDatabase
 	private String databaseDbName;
 	private String databaseDbUser;
 	private String databaseDbPassword;
@@ -158,9 +158,15 @@ public class EditInfobaseDialog extends Dialog {
 		lblServerDBType.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblServerDBType.setText("DBMS type");
 		
-		comboServerDBType = new Combo(container, SWT.NONE);
-		comboServerDBType.setItems(new String[] {"MSSQLServer", "PostgreSQL", "(?IBM DB2)", "(?Oracle Database)"});
+		comboServerDBType = new Combo(container, SWT.READ_ONLY);
+//		comboServerDBType.setItems(new String[] {"MSSQLServer", "PostgreSQL", "(?IBM DB2)", "(?Oracle Database)"});
 		comboServerDBType.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+
+		comboServerDBType.add("MSSQLServer");
+		comboServerDBType.add("PostgreSQL");
+		comboServerDBType.add("IBMDB2");
+		comboServerDBType.add("OracleDatabase");
+		comboServerDBType.select(0);
 		
 		Label lblDatabaseDbName = new Label(container, SWT.NONE);
 		lblDatabaseDbName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
@@ -448,8 +454,8 @@ public class EditInfobaseDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		Button button = createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
-		button.addSelectionListener(new SelectionAdapter() {
+		Button buttonOK = createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
+		buttonOK.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				saveNewServerProperties();
@@ -458,8 +464,8 @@ public class EditInfobaseDialog extends Dialog {
 		
 		createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
 		
-		Button buttonPr = createButton(parent, IDialogConstants.PROCEED_ID, "Apply", false);
-		buttonPr.addSelectionListener(new SelectionAdapter() {
+		Button buttonApply = createButton(parent, IDialogConstants.PROCEED_ID, "Apply", false);
+		buttonApply.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				extractInfobaseVariablesFromControls();

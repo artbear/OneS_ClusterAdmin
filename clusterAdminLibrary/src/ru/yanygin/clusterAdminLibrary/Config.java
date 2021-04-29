@@ -18,19 +18,20 @@ import com.google.gson.annotations.SerializedName;
 //import ru.yanygin.clusterAdminLibrary.Config.Server;
 
 public class Config {
-	@SerializedName("servers")
+	@SerializedName("Servers")
 	@Expose
-	public Map<String, Server> servers = new HashMap<>();
+	public Map<String, Server> servers = new HashMap<>(); // Надо определиться что должно являться ключем, агент (Server:1540) или менеджер (Server:1541)
 
 	public Server CreateNewServer() {
 		return new Server("newServerAddress:1541");
 	}
 	
 	public List<String> addNewServers(List<String> servers) {
+		// Пакетное добавление серверов в список, предполагается для механизма импорта из списка информационных баз
 
 		List<String> addedServers = new ArrayList<>();
 
-		// Имя сервера, которое приходит сюда не равно Представлению сервера, выаводимому в списке
+		// Имя сервера, которое приходит сюда не равно Представлению сервера, выводимому в списке
 		// Имя сервера. оно же Key в map и json, строка вида Server:1541, с обязательным указанием порта менеджера, к которому подключаемся
 		// если порт менеджера не задан - ставим стандартный 1541
 		// переделать
@@ -64,31 +65,47 @@ public class Config {
 	 */
 	public class Server {
 		
-		@SerializedName("serverHost") // может быть переименовать в serverHostName
+		@SerializedName("ManagerHost")
 		@Expose
-		public String serverHost;
+		public String managerHost;
 		
-		@SerializedName("managerPort")
+		@SerializedName("AgentPort")
+		@Expose
+		public int agentPort;
+		
+		@SerializedName("ManagerPort")
 		@Expose
 		public int managerPort;
 		
-		@SerializedName("remoteRasPort")
+		@SerializedName("RasHost")
 		@Expose
-		public int remoteRasPort;
+		public String rasHost;
+
+		@SerializedName("RasPort")
+		@Expose
+		public int rasPort;
 		
-		@SerializedName("useLocalRas")
+		@SerializedName("UseLocalRas")
 		@Expose
 		public boolean useLocalRas;
 		
-		@SerializedName("localRasPort")
+		@SerializedName("LocalRasPort")
 		@Expose
 		public int localRasPort;
 		
-		@SerializedName("localRasV8version")
+		@SerializedName("LocalRasV8version")
 		@Expose
 		public String localRasV8version;
 		
-		@SerializedName("autoconnect")
+		@SerializedName("AgentUser")
+		@Expose
+		public String agentUser;
+		
+		@SerializedName("AgentPassword")
+		@Expose
+		public String agentPasswors;
+		
+		@SerializedName("Autoconnect")
 		@Expose
 		public boolean autoconnect;
 		
@@ -103,14 +120,18 @@ public class Config {
 		public Map<UUID, List<IInfoBaseInfoShort>> clustersInfoBasesShortCashe;
 
 		public Server(String serverName) {
-			this.serverHost = calcHostName(serverName);
-			this.managerPort = calcManagerPort(serverName);
-			this.remoteRasPort = calcRemoteRASPort(serverName);
+//			this.managerHost = calcHostName(serverName);
+//			this.managerPort = calcManagerPort(serverName);
+//			this.rasPort = calcRemoteRASPort(serverName);
+			calcServerParams(serverName);
+			
 			this.useLocalRas = false;
 			this.localRasPort = 0;
 			this.localRasV8version = "";
 			this.autoconnect = false;
 			this.available = false;
+			this.agentUser = "";
+			this.agentPasswors = "";
 			
 			init();
 
@@ -121,23 +142,24 @@ public class Config {
 			this.clusterConnector = new ClusterConnector(factory);
 			this.clustersInfoBasesShortCashe = new HashMap<>();
 		}
-
+		
+		// Надо определиться что должно являться ключем, агент (Server:1540) или менеджер (Server:1541)
 		public String getServerKey() {
-			return serverHost.concat(":").concat(Integer.toString(managerPort));
+			return managerHost.concat(":").concat(Integer.toString(agentPort));
 		}
 
-		public String getServerPresent() {
+		public String getServerDescription() {
 			String rasPort = "";
 			if (useLocalRas) {
-				rasPort = "(*".concat(Integer.toString(remoteRasPort)).concat(")");
+				rasPort = "(*".concat(Integer.toString(localRasPort)).concat(")");
 			}
 			else {
-				rasPort = Integer.toString(remoteRasPort);
+				rasPort = Integer.toString(this.rasPort);
 			}
 			
-			return serverHost.concat(":")
-					.concat(Integer.toString(managerPort))
-					.concat("/")
+			return managerHost.concat(":")
+					.concat(Integer.toString(agentPort))
+					.concat("-")
 					.concat(rasPort);
 		}
 
@@ -145,28 +167,40 @@ public class Config {
 			return Integer.toString(managerPort);
 		}
 
-		public String getRemoteRasPortAsString() {
-			return Integer.toString(remoteRasPort);
+		public String getAgentPortAsString() {
+			return Integer.toString(agentPort);
+		}
+		public String getRasPortAsString() {
+			return Integer.toString(rasPort);
 		}
 
 		public String getLocalRasPortAsString() {
 			return Integer.toString(localRasPort);
 		}
 		
-		public void setNewServerProperties(String serverHost,
+		public void setNewServerProperties(String managerHost,
 											int managerPort,
-											int remoteRasPort,
+											int agentPort,
+											String rasHost,
+											int rasPort,
 											boolean useLocalRas,
 											int localRasPort,
 											String localRasV8version,
-											boolean autoconnect) {
-			this.serverHost = serverHost;
+											boolean autoconnect,
+											String agentUser,
+											String agentPasswors) {
+			
+			this.managerHost = managerHost;
 			this.managerPort = managerPort;
-			this.remoteRasPort = remoteRasPort;
+			this.agentPort = agentPort;
+			this.rasHost	= rasHost;
+			this.rasPort 	= rasPort;
 			this.useLocalRas = useLocalRas;
 			this.localRasPort = localRasPort;
 			this.localRasV8version = localRasV8version;
 			this.autoconnect = autoconnect;
+			this.agentUser = agentUser;
+			this.agentPasswors = agentPasswors;
 			
 			if (this.autoconnect) {
 				connect(false);
@@ -175,8 +209,8 @@ public class Config {
 		
 		
 		/** Вычисляет имя хоста, на котором запущены процессы кластера
-		 * @param serverAddress - Имя инф.базы из списка баз. Может содержать номер порта.
-		 *  Примеры: Desktop, Desktop:2541
+		 * @param serverAddress - Имя инф.базы из списка баз. Может содержать номер порта менеджера кластера (по-умолчанию 1541).
+		 *  Примеры: Server1c, Server1c:2541
 		 * @return Имя хоста, на котором запущены процессы кластера
 		 */
 		private String calcHostName(String serverAddress) {
@@ -212,19 +246,53 @@ public class Config {
 			}
 			return port;
 		}
-
+		
+		private void calcServerParams(String serverAddress) {
+			
+			String managerHost;
+			String rasHost;
+			int managerPort;
+			int agentPort;
+			int rasPort;
+			
+			serverAddress = serverAddress.strip();
+			if (serverAddress.isBlank())
+				serverAddress = "localhost";
+			
+			String[] ar = serverAddress.split(":");
+			managerHost	= ar[0];
+			rasHost		= ar[0];
+			
+			if (ar.length == 1) {
+				managerPort = 1541;
+				agentPort 	= 1540;
+				rasPort 	= 1545;
+			} else {
+				managerPort = Integer.parseInt(ar[1]);
+				agentPort = managerPort - 1;
+				rasPort = managerPort + 4;
+			}
+			
+			this.managerHost 	= managerHost;
+			this.rasHost 		= rasHost;
+			this.managerPort 	= managerPort;
+			this.agentPort 		= agentPort;
+			this.rasPort 		= rasPort;
+			
+		}
+		
 		public boolean connect(boolean disconnectAfter) {
 			
 			if (clusterConnector.isConnected())
 				return true;
 			
-//			String serverAddress = serverAddress;
-			int rasPort = useLocalRas ? localRasPort : remoteRasPort;
+			String rasHost 	= useLocalRas ? "localhost" : this.rasHost;
+			int rasPort 	= useLocalRas ? localRasPort : this.rasPort;
 
 			try {
-				clusterConnector.connect(serverHost, rasPort, 20);
+				clusterConnector.connect(rasHost, rasPort, 20);
 				available = true;
-				System.out.println("Server ".concat(getServerPresent()).concat(" is connected now"));
+				System.out.println("Server ".concat(getServerDescription()).concat(" is connected now"));
 				
 				if (disconnectAfter) {
 					clusterConnector.disconnect();	
@@ -232,14 +300,20 @@ public class Config {
 				//auth
 				clusterInfoList = clusterConnector.getClusterInfoList();
 				clusterInfoList.forEach(clusterInfo -> {
-					clusterConnector.authenticateCluster(clusterInfo.getClusterId(), "", "");
+					try {
+						clusterConnector.authenticateCluster(clusterInfo.getClusterId(), agentUser, agentPasswors);
+					} catch (Exception e) {
+						clusterConnector.authenticateCluster(clusterInfo.getClusterId(), "", "");
+					}
+//					clusterConnector.authenticateCluster(clusterInfo.getClusterId(), "Admin", "123");
 				});
 				
 			}
-			catch (Exception e) {
+			catch (Exception excp) {
 				available = false;
 				
-				System.out.println("Server ".concat(getServerPresent()).concat(" connect error"));
+				System.out.println("Server ".concat(getServerDescription()).concat(" connect error"));
+				System.out.println(excp.getLocalizedMessage());
 				return false;
 			}
 			return true;
@@ -249,16 +323,16 @@ public class Config {
 		public boolean disconnect() {
 			
 			if (!clusterConnector.isConnected()) {
-				System.out.println("Server ".concat(getServerPresent()).concat(" is not connected"));
+				System.out.println("Server ".concat(getServerDescription()).concat(" is not connected"));
 				return true;
 			}
 			
 			try {
 				clusterConnector.disconnect();	
-				System.out.println("Server ".concat(getServerPresent()).concat(" disconnected now"));
+				System.out.println("Server ".concat(getServerDescription()).concat(" disconnected now"));
 			}
 			catch (Exception excp) {
-				System.out.println("Server ".concat(getServerPresent()).concat(" disconnect error").concat(excp.getMessage()));
+				System.out.println("Server ".concat(getServerDescription()).concat(" disconnect error").concat(excp.getMessage()));
 				return false;
 			}
 			return true;
