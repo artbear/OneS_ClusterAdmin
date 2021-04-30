@@ -266,4 +266,10 @@ public class ClusterViewer extends ApplicationWindow {
 	protected Point getInitialSize() {
 		return new Point(1600, 800);
 	}
+	
+//	@Override
+//	public int open() {
+//		((ViewerArea) this.getContents()).open();
+//		return super.open();
+//	}
 }

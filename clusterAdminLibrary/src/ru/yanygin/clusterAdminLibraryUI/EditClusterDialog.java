@@ -316,9 +316,50 @@ public class EditClusterDialog extends Dialog {
 		clusterInfo.setExpirationTimeout(expirationTimeout);
 		clusterInfo.setSessionFaultToleranceLevel(faultToleranceLevel);
 		clusterInfo.setLoadBalancingMode(loadBalancingMode);
-
+		
 		try {
 			clusterConnector.authenticateAgent("", "");
+		} catch (Exception excp) {
+			
+			AuthenticateDialog authenticateDialog;
+			String username = "";
+			String authExcpMessage = "";
+			int dialogResult;
+			
+			while (true) {
+				
+				try {
+					authenticateDialog = new AuthenticateDialog(getParentShell(), clusterInfo, clusterConnector, username, "auth to Agent", authExcpMessage);
+					dialogResult = authenticateDialog.open();
+				} catch (Exception exc) {
+					MessageBox messageBox = new MessageBox(getParentShell());
+					messageBox.setMessage(exc.getLocalizedMessage());
+					messageBox.open();
+					return;
+				}
+	
+				if (dialogResult == 0) {
+					try {
+						username = authenticateDialog.getUsername();
+						clusterConnector.authenticateAgent(username, authenticateDialog.getPassword());
+						break;
+					} catch (Exception exc) {
+						authExcpMessage = exc.getLocalizedMessage();
+						continue;
+					}
+				} else {
+					return;
+				}
+			}
+			
+//			excp.printStackTrace();
+//			MessageBox messageBox = new MessageBox(getParentShell());
+//			messageBox.setMessage(excp.getLocalizedMessage());
+//			messageBox.open();
+		}
+
+		try {
+//			clusterConnector.authenticateAgent("", "");
 			clusterConnector.regCluster(clusterInfo);
 		} catch (Exception excp) {
 			excp.printStackTrace();

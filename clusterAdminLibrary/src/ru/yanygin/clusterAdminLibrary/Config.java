@@ -118,6 +118,11 @@ public class Config {
 //		public UUID clusterID; // deprecated
 		public List<IClusterInfo> clusterInfoList;
 		public Map<UUID, List<IInfoBaseInfoShort>> clustersInfoBasesShortCashe;
+		
+//		public Map<UUID, Pair<String, String>> credentialsClustersCashe;
+//		public Map<UUID, Pair<String, String>> credentialsInfobasesCashe;
+		public Map<UUID, String[]> credentialsClustersCashe;
+		public Map<UUID, String[]> credentialsInfobasesCashe;
 
 		public Server(String serverName) {
 //			this.managerHost = calcHostName(serverName);
@@ -297,15 +302,21 @@ public class Config {
 				if (disconnectAfter) {
 					clusterConnector.disconnect();	
 				}
-				//auth
+				//auth agent
+				try {
+					clusterConnector.authenticateAgent("", "");
+				} catch (Exception e) {
+					clusterConnector.authenticateAgent(agentUser, agentPasswors);
+				}
+				//auth clusters
 				clusterInfoList = clusterConnector.getClusterInfoList();
 				clusterInfoList.forEach(clusterInfo -> {
 					try {
-						clusterConnector.authenticateCluster(clusterInfo.getClusterId(), agentUser, agentPasswors);
-					} catch (Exception e) {
 						clusterConnector.authenticateCluster(clusterInfo.getClusterId(), "", "");
+					} catch (Exception e) {
+						clusterConnector.authenticateCluster(clusterInfo.getClusterId(), agentUser, agentPasswors);
 					}
-//					clusterConnector.authenticateCluster(clusterInfo.getClusterId(), "Admin", "123");
+
 				});
 				
 			}
@@ -341,9 +352,15 @@ public class Config {
 
 	    public List<IInfoBaseInfoShort> getInfoBasesShort(UUID clusterID)
 	    {
-	    	// сделать кеширование списка инфобаз
+			try {
+				clusterConnector.authenticateCluster(clusterID, "", "");
+			} catch (Exception e) {
+				clusterConnector.authenticateCluster(clusterID, agentUser, agentPasswors);
+			}
+			
 	    	List<IInfoBaseInfoShort> clusterInfoBases = clusterConnector.getInfoBasesShort(clusterID);
 	    	
+	    	// кеширование списка инфобаз
 	    	clustersInfoBasesShortCashe.put(clusterID, clusterInfoBases);
 	    	return clusterInfoBases;
 	        

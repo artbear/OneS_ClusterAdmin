@@ -118,8 +118,7 @@ public final class ClusterConnector
 	 * @param userName infobase administrator name
 	 * @param password infobase administrator password
 	 */
-    public void addInfoBaseCredentials(UUID clusterId, String userName,
-        String password)
+    public void addInfoBaseCredentials(UUID clusterId, String userName, String password)
 	{
 		if (connection == null)
 		{

@@ -8,6 +8,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
@@ -98,13 +99,24 @@ public class ViewerArea extends Composite {
 		// Заполнение списка серверов
 		clusterProvider.getServers().forEach((serverKey, server) -> {
 			TreeItem serverItem = addServerItemInServersTree(server);
-			fillClustersInTree(serverItem);
+//			fillClustersInTree(serverItem); // переместить заполнение дерева из конструктора в метод открытия формы
 		});
 		
 		// Пропорции областей
 		sashForm.setWeights(new int[] {3, 10});
 
 	}
+	
+	@Override
+	public void addPaintListener(PaintListener listener) { // не работает
+		connectToAllServers();
+
+		super.addPaintListener(listener);
+	}
+	
+//	public void open() {
+//		connectToAllServers();
+//	}
 
 	private void fillClustersInTree(TreeItem serverItem) {
 		
@@ -160,23 +172,12 @@ public class ViewerArea extends Composite {
 		});
 
 		ToolItem toolBarItemConnectAllServers = new ToolItem(toolBar, SWT.NONE);
-		toolBarItemConnectAllServers.setText("Connect all servers");		
+		toolBarItemConnectAllServers.setText("Connect to all servers");		
 		toolBarItemConnectAllServers.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				
-				clusterProvider.connectToServers();
-//				List<String> connectedServers = clusterProvider.getConnectedServers();
-				
-//				if (connectedServers.isEmpty())
-//					return;
-				
-				TreeItem[] serversItem = serversTree.getItems();
-				
-				for (int i = 0; i < serversItem.length; i++) {
-					TreeItem serverItem = serversItem[i];
-					fillClustersInTree(serverItem);
-				}
+				connectToAllServers();
 				
 			}
 		});
@@ -588,11 +589,12 @@ public class ViewerArea extends Composite {
 		serversTree.setMenu(serverMenu);
 	}
 	
-
+	
 	protected void fillServersList() {
 		// TODO Auto-generated method stub
 		
 	}
+	
 	
 	private void fillInfobaseOfCluster(TreeItem clusterItem, Server server) {
 		
@@ -623,6 +625,7 @@ public class ViewerArea extends Composite {
 
 	}
 
+	
 	private TreeItem addServerItemInServersTree(Server config) {
 		
 //		TreeItem item = new ServerTreeItem(serversTree, SWT.NONE, config);
@@ -644,6 +647,7 @@ public class ViewerArea extends Composite {
 		return item;
 	}
 	
+	
 	private TreeItem addClusterItemInServersTree(TreeItem serverItem, IClusterInfo clusterInfo) {
 		TreeItem item = new TreeItem(serverItem, SWT.NONE);
 		
@@ -656,6 +660,7 @@ public class ViewerArea extends Composite {
 		return item;
 	}
 	
+	
 	private void addInfobaseItemInServersTree(TreeItem clusterItem, IInfoBaseInfoShort ibs) {
 		TreeItem item = new TreeItem(clusterItem, SWT.NONE);
 		
@@ -666,6 +671,7 @@ public class ViewerArea extends Composite {
 		item.setImage(infobaseIcon);
 		item.setChecked(false);
 	}
+	
 	
 	private void initSessionTable(TabFolder tabFolder) {
 
@@ -717,6 +723,7 @@ public class ViewerArea extends Composite {
 		
 	}
 
+	
 	private void addSessionsTableContextMenu() {
 		
 		Menu tableSessionsMenu = new Menu(tableSessions);
@@ -743,6 +750,7 @@ public class ViewerArea extends Composite {
 			}
 		});
 	}
+	
 	
 	private void initConnectionsTable(TabFolder tabFolder) {
 
@@ -798,6 +806,7 @@ public class ViewerArea extends Composite {
 		
 	}
 
+	
 	private void addConnectionsTableContextMenu() {
 		
 		// Пока не понятен состав меню
@@ -824,6 +833,7 @@ public class ViewerArea extends Composite {
 //		});
 	}
 	
+	
 	private void initIcon() {
 		serverIcon = getImage(getParent().getDisplay(), "/server_24.png");
 		serverIconUp = getImage(getParent().getDisplay(), "/server_up_24.png");
@@ -837,8 +847,21 @@ public class ViewerArea extends Composite {
 //		serverIconDown = getImage(mainForm.getDisplay(), "/icons/server_down_24.png");
 	}
 	
+	
 	private Image getImage(Device device, String name) {
 		return new Image(device, this.getClass().getResourceAsStream(name));
+	}
+
+	private void connectToAllServers() {
+		
+		clusterProvider.connectToServers(); // кажется надо переделать соединение внутрь цикла
+		
+		TreeItem[] serversItem = serversTree.getItems();
+		
+		for (int i = 0; i < serversItem.length; i++) {
+			TreeItem serverItem = serversItem[i];
+			fillClustersInTree(serverItem);
+		}
 	}
 	
 

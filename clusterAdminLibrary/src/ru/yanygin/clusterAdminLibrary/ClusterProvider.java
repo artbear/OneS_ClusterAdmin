@@ -69,9 +69,9 @@ public class ClusterProvider {
 		else {
 			commonConfig.servers.forEach((server, config) -> {
 				config.init();;
-				if (config.autoconnect) {
-					config.connect(false);
-				}
+//				if (config.autoconnect) {
+//					config.connect(false);
+//				}
 
 			});
 		}
