@@ -21,7 +21,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.DisposeEvent;
 
-public class EditServerConnectionDialog extends Dialog {
+public class EditServerConnectionDialog_del extends Dialog {
 	
 	private Button btnAutoconnect;
 	private Text txtServerHost;
@@ -47,7 +47,7 @@ public class EditServerConnectionDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public EditServerConnectionDialog(Shell parentShell, Server serverParams) {
+	public EditServerConnectionDialog_del(Shell parentShell, Server serverParams) {
 		super(parentShell);
 		this.serverParams = serverParams;
 	}

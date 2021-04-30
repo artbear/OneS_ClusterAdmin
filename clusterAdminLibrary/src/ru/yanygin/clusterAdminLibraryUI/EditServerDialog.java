@@ -21,6 +21,9 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.TableColumn;
 
 public class EditServerDialog extends Dialog {
 	
@@ -59,6 +62,8 @@ public class EditServerDialog extends Dialog {
 	private boolean autoconnect;
 	private String agentUser;
 	private String agentPasswors;
+	private Group grpCredentials;
+	private Table tableCredentials;
 
 	/**
 	 * Create the dialog.
@@ -68,7 +73,8 @@ public class EditServerDialog extends Dialog {
 	public EditServerDialog(Shell parentShell, Server serverParams) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM);
-		parentShell.setText("Parameters of the central server 1C:Enterprise");
+		
+//		parentShell.setText("Parameters of the central server 1C:Enterprise");
 
 		this.serverParams = serverParams;
 	}
@@ -144,30 +150,6 @@ public class EditServerDialog extends Dialog {
 		txtManagerPort.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		txtManagerPort.setToolTipText("manager port");
 		
-		lblAgentUser = new Label(grpRagentParameters, SWT.NONE);
-		lblAgentUser.setText("User");
-		new Label(grpRagentParameters, SWT.NONE);
-		new Label(grpRagentParameters, SWT.NONE);
-		
-		txtAgentUser = new Text(grpRagentParameters, SWT.BORDER);
-		txtAgentUser.setToolTipText("Agent host");
-		GridData gd_txtAgentUser = new GridData(SWT.LEFT, SWT.CENTER, true, false, 2, 1);
-		gd_txtAgentUser.widthHint = 150;
-		txtAgentUser.setLayoutData(gd_txtAgentUser);
-		new Label(grpRagentParameters, SWT.NONE);
-		
-		lblAgentPwd = new Label(grpRagentParameters, SWT.NONE);
-		lblAgentPwd.setText("Password");
-		new Label(grpRagentParameters, SWT.NONE);
-		new Label(grpRagentParameters, SWT.NONE);
-		
-		txtAgentPasswors = new Text(grpRagentParameters, SWT.BORDER);
-		txtAgentPasswors.setToolTipText("Agent password");
-		GridData gd_txtAgentPwd = new GridData(SWT.LEFT, SWT.CENTER, true, false, 2, 1);
-		gd_txtAgentPwd.widthHint = 150;
-		txtAgentPasswors.setLayoutData(gd_txtAgentPwd);
-		new Label(grpRagentParameters, SWT.NONE);
-		
 		grpLocalRasParameters = new Group(container, SWT.NONE);
 		GridData gd_grpLocalRasParameters = new GridData(SWT.FILL, SWT.CENTER, false, false, 2, 1);
 		gd_grpLocalRasParameters.widthHint = 487;
@@ -220,6 +202,57 @@ public class EditServerDialog extends Dialog {
 		btnAutoconnect = new Button(container, SWT.CHECK);
 		btnAutoconnect.setText("Automatic connection to the server at startup");
 		new Label(container, SWT.NONE);
+		
+		grpCredentials = new Group(container, SWT.NONE);
+		grpCredentials.setLayout(new GridLayout(2, false));
+		grpCredentials.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		grpCredentials.setText("Credentials");
+		
+		Group grpCentralServerCredential = new Group(grpCredentials, SWT.NONE);
+		grpCentralServerCredential.setText("Central server adminstrator");
+		grpCentralServerCredential.setLayout(new GridLayout(4, false));
+		grpCentralServerCredential.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 2, 1));
+		
+		lblAgentUser = new Label(grpCentralServerCredential, SWT.NONE);
+		lblAgentUser.setSize(23, 15);
+		lblAgentUser.setText("User");
+		
+		txtAgentUser = new Text(grpCentralServerCredential, SWT.BORDER);
+		txtAgentUser.setSize(76, 21);
+		txtAgentUser.setToolTipText("Agent host");
+		
+		lblAgentPwd = new Label(grpCentralServerCredential, SWT.NONE);
+		lblAgentPwd.setSize(50, 15);
+		lblAgentPwd.setText("Password");
+		
+		txtAgentPasswors = new Text(grpCentralServerCredential, SWT.BORDER);
+		txtAgentPasswors.setSize(76, 21);
+		txtAgentPasswors.setToolTipText("Agent password");
+		
+		tableCredentials = new Table(grpCredentials, SWT.BORDER | SWT.FULL_SELECTION);
+		tableCredentials.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		tableCredentials.setHeaderVisible(true);
+		tableCredentials.setLinesVisible(true);
+		
+		TableColumn tblclmnType = new TableColumn(tableCredentials, SWT.NONE);
+		tblclmnType.setWidth(100);
+		tblclmnType.setText("Type");
+		
+		TableColumn tblclmnName = new TableColumn(tableCredentials, SWT.NONE);
+		tblclmnName.setWidth(100);
+		tblclmnName.setText("Name");
+		
+		TableColumn tblclmnUsername = new TableColumn(tableCredentials, SWT.NONE);
+		tblclmnUsername.setWidth(100);
+		tblclmnUsername.setText("Username");
+		
+		TableColumn tblclmnPassword = new TableColumn(tableCredentials, SWT.NONE);
+		tblclmnPassword.setWidth(100);
+		tblclmnPassword.setText("Password");
+		
+		Button btnSaveCredentialsInConfig = new Button(grpCredentials, SWT.CHECK);
+		btnSaveCredentialsInConfig.setText("Save credentials in config");
+		new Label(grpCredentials, SWT.NONE);
 
 		initServerProperties();
 
@@ -297,7 +330,6 @@ public class EditServerDialog extends Dialog {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point(565, 387);
+		return new Point(562, 580);
 	}
-
 }
