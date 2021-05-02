@@ -15,7 +15,9 @@ import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.InfoBaseInfo;
 
-import ru.yanygin.clusterAdminLibrary.ClusterConnector;
+import ru.yanygin.clusterAdminLibrary.ClusterConnector_delete;
+import ru.yanygin.clusterAdminLibrary.Config.Server;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
@@ -38,7 +40,8 @@ public class CreateInfobaseDialog extends Dialog {
 	
 //	private IInfoBaseInfo infoBaseInfo;
 	private IClusterInfo clusterInfo;
-	private ClusterConnector clusterConnector;
+//	private ClusterConnector clusterConnector;
+	private Server server;
 	private Button btnSheduledJobsDenied;
 	private Button btnAllowDistributeLicense;
 	private Button btnInfobaseCreationMode;
@@ -82,7 +85,7 @@ public class CreateInfobaseDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public CreateInfobaseDialog(Shell parentShell, IClusterInfo clusterInfo, ClusterConnector clusterConnector) {
+	public CreateInfobaseDialog(Shell parentShell, Server server, IClusterInfo clusterInfo) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
@@ -90,8 +93,8 @@ public class CreateInfobaseDialog extends Dialog {
 //		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 	    
 //		this.infoBaseInfo = infoBaseInfo;
+		this.server = server;
 		this.clusterInfo = clusterInfo;
-		this.clusterConnector = clusterConnector;
 		
 	}
 
@@ -298,7 +301,7 @@ public class CreateInfobaseDialog extends Dialog {
 				infoBaseInfo.setDateOffset(infobaseDateOffset);
 
 			try {
-				newInfobaseUUID = clusterConnector.createInfoBase(clusterInfo.getClusterId(), infoBaseInfo, (infobaseCreationMode ? 1 : 0));
+				newInfobaseUUID = server.createInfoBase(clusterInfo.getClusterId(), infoBaseInfo, (infobaseCreationMode ? 1 : 0));
 			} catch (Exception excp) {
 				excp.printStackTrace();
 				MessageBox messageBox = new MessageBox(getParentShell());
@@ -340,18 +343,6 @@ public class CreateInfobaseDialog extends Dialog {
 				
 		infobaseLocale 		= comboLocale.getText();
 		infobaseDateOffset 	= Integer.parseInt(comboDateOffset.getText());
-	}
-
-	private Date convertDateTime(DateTime date, DateTime time) {
-		
-		int year = date.getYear() - 1900; // чтото не так с конвертацией
-		int month = date.getMonth();
-		int day = date.getDay();
-		int hrs = time.getHours();
-		int min = time.getMinutes();
-		int sec = time.getSeconds();
-
-		return new Date(year, month, day, hrs, min, sec);
 	}
 	
 	/**

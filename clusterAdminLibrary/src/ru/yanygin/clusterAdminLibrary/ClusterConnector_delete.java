@@ -17,14 +17,14 @@ import com._1c.v8.ibis.admin.client.IAgentAdminConnectorFactory;
  * Utility class for interaction with the administration server of 1C:Enterprise 
  * server cluster
  */
-public final class ClusterConnector
+public final class ClusterConnector_delete
 {
 	private final IAgentAdminConnectorFactory factory;
 
 	private IAgentAdminConnector connector;
 	private IAgentAdminConnection connection;
 
-	public ClusterConnector(IAgentAdminConnectorFactory factory)
+	public ClusterConnector_delete(IAgentAdminConnectorFactory factory)
 	{
 		this.factory = factory;
 	}

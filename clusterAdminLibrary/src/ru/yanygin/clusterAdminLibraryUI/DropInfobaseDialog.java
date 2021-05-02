@@ -9,7 +9,9 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import com._1c.v8.ibis.admin.IClusterInfo;
-import ru.yanygin.clusterAdminLibrary.ClusterConnector;
+import ru.yanygin.clusterAdminLibrary.ClusterConnector_delete;
+import ru.yanygin.clusterAdminLibrary.Config.Server;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
@@ -22,7 +24,7 @@ import org.eclipse.swt.events.SelectionEvent;
 public class DropInfobaseDialog extends Dialog {
 	
 	private IClusterInfo clusterInfo;
-	private ClusterConnector clusterConnector;
+	private Server server;
 	private Button btnClearTheDatabase;
 	private Button btnNotDelete;
 	private Button btnDeleteTheDatabase;
@@ -36,7 +38,7 @@ public class DropInfobaseDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public DropInfobaseDialog(Shell parentShell, UUID infoBaseID, IClusterInfo clusterInfo, ClusterConnector clusterConnector) {
+	public DropInfobaseDialog(Shell parentShell, Server server, IClusterInfo clusterInfo, UUID infoBaseID) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
@@ -45,7 +47,7 @@ public class DropInfobaseDialog extends Dialog {
 	    
 		this.infoBaseID = infoBaseID;
 		this.clusterInfo = clusterInfo;
-		this.clusterConnector = clusterConnector;
+		this.server = server;
 		
 	}
 
@@ -113,7 +115,7 @@ public class DropInfobaseDialog extends Dialog {
 	private void runRemoveInfobase() {
 
 		try {
-			clusterConnector.dropInfoBase(clusterInfo.getClusterId(), infoBaseID, databaseDropMode);
+			server.dropInfoBase(clusterInfo.getClusterId(), infoBaseID, databaseDropMode);
 			close();
 		} catch (Exception excp) {
 			excp.printStackTrace();

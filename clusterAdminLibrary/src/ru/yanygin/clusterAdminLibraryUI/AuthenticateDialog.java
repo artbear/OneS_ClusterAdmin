@@ -9,7 +9,9 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com._1c.v8.ibis.admin.IClusterInfo;
-import ru.yanygin.clusterAdminLibrary.ClusterConnector;
+import ru.yanygin.clusterAdminLibrary.ClusterConnector_delete;
+import ru.yanygin.clusterAdminLibrary.Config.Server;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
@@ -29,12 +31,13 @@ public class AuthenticateDialog extends Dialog {
 	private Label lblAuthExcpMessage;
 	
 	private IClusterInfo clusterInfo;
-	private ClusterConnector clusterConnector;
+//	private ClusterConnector clusterConnector;
+	private Server server;
 
 	private String username;
 	private String password;
 	private String authExcpMessage;
-	private String authenticateInfo;
+	private String authenticateType;
 	
 	public String getUsername() {
 		return username;
@@ -49,7 +52,7 @@ public class AuthenticateDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public AuthenticateDialog(Shell parentShell, IClusterInfo clusterInfo, ClusterConnector clusterConnector, String username, String authenticateInfo, String authExcpMessage) {
+	public AuthenticateDialog(Shell parentShell, Server server, IClusterInfo clusterInfo, String username, String authenticateType, String authExcpMessage) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
@@ -57,10 +60,10 @@ public class AuthenticateDialog extends Dialog {
 //		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 	    
 		this.clusterInfo 		= clusterInfo;
-		this.clusterConnector 	= clusterConnector;
+		this.server 			= server;
 		this.username 			= username;
 		this.authExcpMessage 	= authExcpMessage;
-		this.authenticateInfo 	= authenticateInfo;
+		this.authenticateType 	= authenticateType;
 		
 	}
 
@@ -81,7 +84,7 @@ public class AuthenticateDialog extends Dialog {
 		
 		lblAuthenticateInfo = new Label(container, SWT.NONE);
 		lblAuthenticateInfo.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, false, 2, 1));
-		lblAuthenticateInfo.setText(authenticateInfo);
+		lblAuthenticateInfo.setText(authenticateType);
 		
 		Label lblUsername = new Label(container, SWT.NONE);
 		lblUsername.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
@@ -142,11 +145,11 @@ public class AuthenticateDialog extends Dialog {
 
 		try {
 
-			clusterConnector.authenticateAgent(getUsername(), getPassword());
+			server.authenticateAgent(getUsername(), getPassword());
 
-			clusterConnector.authenticateCluster(clusterInfo.getClusterId(), getUsername(), getPassword());
+			server.authenticateCluster(clusterInfo.getClusterId(), getUsername(), getPassword());
 
-			clusterConnector.addInfoBaseCredentials(clusterInfo.getClusterId(), getUsername(), getPassword());
+			server.addInfoBaseCredentials(clusterInfo.getClusterId(), getUsername(), getPassword());
 
 		} catch (Exception excp) {
 			excp.printStackTrace();

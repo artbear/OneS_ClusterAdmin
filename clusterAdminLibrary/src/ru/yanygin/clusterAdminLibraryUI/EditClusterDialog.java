@@ -16,7 +16,7 @@ import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.InfoBaseInfo;
 
-import ru.yanygin.clusterAdminLibrary.ClusterConnector;
+import ru.yanygin.clusterAdminLibrary.ClusterConnector_delete;
 import ru.yanygin.clusterAdminLibrary.Config.Server;
 
 import org.eclipse.swt.SWT;
@@ -39,7 +39,7 @@ import org.eclipse.swt.widgets.DateTime;
 public class EditClusterDialog extends Dialog {
 	
 	private IClusterInfo clusterInfo;
-	private ClusterConnector clusterConnector;
+	private Server server;
 	
 	private Button btnClusterRecyclingKillProblemProcesses;
 	private Text txtClusterName;
@@ -91,15 +91,15 @@ public class EditClusterDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public EditClusterDialog(Shell parentShell, IClusterInfo clusterInfo, ClusterConnector clusterConnector) {
+	public EditClusterDialog(Shell parentShell, Server server, IClusterInfo clusterInfo) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
 //		super.configureShell(parentShell);
 //		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 	    
+		this.server = server;
 		this.clusterInfo = clusterInfo;
-		this.clusterConnector = clusterConnector;
 	}
 
 	/**
@@ -318,7 +318,7 @@ public class EditClusterDialog extends Dialog {
 		clusterInfo.setLoadBalancingMode(loadBalancingMode);
 		
 		try {
-			clusterConnector.authenticateAgent("", "");
+			server.authenticateAgent("", "");
 		} catch (Exception excp) {
 			
 			AuthenticateDialog authenticateDialog;
@@ -329,7 +329,7 @@ public class EditClusterDialog extends Dialog {
 			while (true) {
 				
 				try {
-					authenticateDialog = new AuthenticateDialog(getParentShell(), clusterInfo, clusterConnector, username, "auth to Agent", authExcpMessage);
+					authenticateDialog = new AuthenticateDialog(getParentShell(), server, clusterInfo, username, "auth to Agent", authExcpMessage);
 					dialogResult = authenticateDialog.open();
 				} catch (Exception exc) {
 					MessageBox messageBox = new MessageBox(getParentShell());
@@ -341,7 +341,7 @@ public class EditClusterDialog extends Dialog {
 				if (dialogResult == 0) {
 					try {
 						username = authenticateDialog.getUsername();
-						clusterConnector.authenticateAgent(username, authenticateDialog.getPassword());
+						server.authenticateAgent(username, authenticateDialog.getPassword());
 						break;
 					} catch (Exception exc) {
 						authExcpMessage = exc.getLocalizedMessage();
@@ -360,7 +360,7 @@ public class EditClusterDialog extends Dialog {
 
 		try {
 //			clusterConnector.authenticateAgent("", "");
-			clusterConnector.regCluster(clusterInfo);
+			server.regCluster(clusterInfo);
 		} catch (Exception excp) {
 			excp.printStackTrace();
 			MessageBox messageBox = new MessageBox(getParentShell());

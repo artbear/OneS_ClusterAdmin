@@ -23,7 +23,7 @@ public class ServerTreeItem extends TreeItem {
 		
 		initIcon();
 		
-		if (config.clusterConnector.isConnected()) {
+		if (config.isConnected()) {
 			this.setImage(serverIconUp);
 		} else {
 			this.setImage(serverIconDown);

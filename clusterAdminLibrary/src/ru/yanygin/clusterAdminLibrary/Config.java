@@ -6,12 +6,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com._1c.v8.ibis.admin.AgentAdminException;
+import com._1c.v8.ibis.admin.IAgentAdminConnection;
 import com._1c.v8.ibis.admin.IClusterInfo;
+import com._1c.v8.ibis.admin.IInfoBaseConnectionInfo;
 import com._1c.v8.ibis.admin.IInfoBaseConnectionShort;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfoShort;
 import com._1c.v8.ibis.admin.ISessionInfo;
 import com._1c.v8.ibis.admin.client.AgentAdminConnectorFactory;
+import com._1c.v8.ibis.admin.client.IAgentAdminConnector;
+import com._1c.v8.ibis.admin.client.IAgentAdminConnectorFactory;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -49,13 +54,13 @@ public class Config {
 	
 	public void connectAllServers() {
 		servers.forEach((server, config) -> {
-			config.connect(false);
+			config.connectAndAuthenticate(false);
 		});
 	}
 	
 	public void checkConnectionAllServers() {
 		servers.forEach((server, config) -> {
-			config.connect(true);
+			config.connectAndAuthenticate(true);
 		});
 	}
 
@@ -113,10 +118,15 @@ public class Config {
 		
 		public String connectionError;	
 		
-		public ClusterConnector clusterConnector;
+//		public ClusterConnector clusterConnector;
+		
+//		private final IAgentAdminConnectorFactory factory;
+		private IAgentAdminConnector agentConnector;
+		private IAgentAdminConnection agentConnection;
+
 		
 //		public UUID clusterID; // deprecated
-		public List<IClusterInfo> clusterInfoList;
+		public List<IClusterInfo> clusters;
 		public Map<UUID, List<IInfoBaseInfoShort>> clustersInfoBasesShortCashe;
 		
 //		public Map<UUID, Pair<String, String>> credentialsClustersCashe;
@@ -143,8 +153,8 @@ public class Config {
 		}
 
 		public void init() {
-			AgentAdminConnectorFactory factory = new AgentAdminConnectorFactory();
-			this.clusterConnector = new ClusterConnector(factory);
+//			AgentAdminConnectorFactory factory = new AgentAdminConnectorFactory();
+//			this.clusterConnector = new ClusterConnector(factory);
 			this.clustersInfoBasesShortCashe = new HashMap<>();
 		}
 		
@@ -208,7 +218,7 @@ public class Config {
 			this.agentPasswors = agentPasswors;
 			
 			if (this.autoconnect) {
-				connect(false);
+				connectAndAuthenticate(false);
 			}
 		}
 		
@@ -286,35 +296,35 @@ public class Config {
 			
 		}
 		
-		public boolean connect(boolean disconnectAfter) {
+		public boolean connectAndAuthenticate(boolean disconnectAfter) {
 			
-			if (clusterConnector.isConnected())
+			if (isConnected())
 				return true;
 			
 			String rasHost 	= useLocalRas ? "localhost" : this.rasHost;
 			int rasPort 	= useLocalRas ? localRasPort : this.rasPort;
 
 			try {
-				clusterConnector.connect(rasHost, rasPort, 20);
-				available = true;
-				System.out.println("Server ".concat(getServerDescription()).concat(" is connected now"));
+				connectToAgent(rasHost, rasPort, 20);
 				
 				if (disconnectAfter) {
-					clusterConnector.disconnect();	
+					disconnectFromAgent();	
 				}
 				//auth agent
 				try {
-					clusterConnector.authenticateAgent("", "");
+					authenticateAgent("", "");
 				} catch (Exception e) {
-					clusterConnector.authenticateAgent(agentUser, agentPasswors);
+					authenticateAgent(agentUser, agentPasswors);
 				}
 				//auth clusters
-				clusterInfoList = clusterConnector.getClusterInfoList();
-				clusterInfoList.forEach(clusterInfo -> {
+				clusters = getClusters(); // а надо ли мне здесь получать кластера???
+				clusters.forEach(clusterInfo -> {
 					try {
-						clusterConnector.authenticateCluster(clusterInfo.getClusterId(), "", "");
+						authenticateCluster(clusterInfo.getClusterId(), "", "");
 					} catch (Exception e) {
-						clusterConnector.authenticateCluster(clusterInfo.getClusterId(), agentUser, agentPasswors);
+						String clusterUser = "CAdmin";
+						String clusterPasswors = "123";
+						authenticateCluster(clusterInfo.getClusterId(), clusterUser, clusterPasswors);
 					}
 
 				});
@@ -330,42 +340,303 @@ public class Config {
 			return true;
 
 		}
+		
+	    /**
+		 * Establishes connection with the administration server of 1C:Enterprise 
+	     * server cluster
+		 *
+	     * @param address server address
+	     * @param port IP port
+	     * @param timeout connection timeout (in milliseconds)
+	     *
+	     * @throws AgentAdminException in the case of errors.
+		 */
+		public void connectToAgent(String address, int port, long timeout) {
+	        if (agentConnection != null) { // Зачем выбрасывать исключение, если уже подключено???
+	            throw new IllegalStateException("The connection is already established.");
+	        }
 
-		public boolean disconnect() {
-			
-			if (!clusterConnector.isConnected()) {
+	        IAgentAdminConnectorFactory factory = new AgentAdminConnectorFactory();
+	        agentConnector = factory.createConnector(timeout);
+		    agentConnection = agentConnector.connect(address, port);
+		    
+			available = true;
+			System.out.println("Server ".concat(getServerDescription()).concat(" is connected now"));
+		}
+		
+		/**
+		 * Terminates connection to the administration server
+	     *
+	     * @throws AgentAdminException in the case of errors.
+		 */
+		public void disconnectFromAgent() {
+	        if (!isConnected()) {
+//	            throw new IllegalStateException("The connection is not established."); // зачем выбрасывать исключение, если не подключены???
 				System.out.println("Server ".concat(getServerDescription()).concat(" is not connected"));
-				return true;
-			}
-			
-			try {
-				clusterConnector.disconnect();	
+				return;
+//				return true;
+	        }
+
+	        try {
+	        	agentConnector.shutdown();
 				System.out.println("Server ".concat(getServerDescription()).concat(" disconnected now"));
-			}
+	        }
 			catch (Exception excp) {
 				System.out.println("Server ".concat(getServerDescription()).concat(" disconnect error").concat(excp.getMessage()));
-				return false;
 			}
+	        finally {
+	        	agentConnection = null;
+		        agentConnector = null;
+	        }
+		}
+
+		public boolean disconnect1() {
+//			
+//			if (!clusterConnector.isConnected()) {
+//				System.out.println("Server ".concat(getServerDescription()).concat(" is not connected"));
+//				return true;
+//			}
+//			
+//			try {
+//				clusterConnector.disconnect();	
+//				System.out.println("Server ".concat(getServerDescription()).concat(" disconnected now"));
+//			}
+//			catch (Exception excp) {
+//				System.out.println("Server ".concat(getServerDescription()).concat(" disconnect error").concat(excp.getMessage()));
+//				return false;
+//			}
 			return true;
 
 		}
+		
+		/**
+		 * Checks whether connection to the administration server is established
+		 *
+		 * @return {@code true} if connected, {@code false} overwise
+		 */
+		public boolean isConnected() {
+			return agentConnection != null;
+		}
+		
+		/**
+		 * Authethicates a central server administrator agent
+		 * 
+		 * @param userName cluster administrator name
+		 * @param password cluster administrator password
+		 */
+		public void authenticateAgent(String userName, String password)
+		{
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
 
+			agentConnection.authenticateAgent(userName, password);
+		}
+		
+		/**
+		 * Authethicates a server cluster administrator
+		 * 
+		 * @param clusterId cluster ID
+		 * @param userName cluster administrator name
+		 * @param password cluster administrator password
+		 */
+		public void authenticateCluster(UUID clusterId, String userName, String password)
+		{
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+
+			agentConnection.authenticate(clusterId, userName, password);
+		}
+		
+		/**
+	     * Adds infobase authentication parameters to the context 
+	     * of the current administration server connection
+		 * 
+		 * @param clusterId cluster ID
+		 * @param userName infobase administrator name
+		 * @param password infobase administrator password
+		 */
+	    public void addInfoBaseCredentials(UUID clusterId, String userName, String password)
+		{
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+
+			agentConnection.addAuthentication(clusterId, userName, password);
+		}
+		
+	    /**
+	     * Gets the list of cluster descriptions registered on the central server
+	     *
+	     * @return list of cluster descriptions
+	     */
+	    public List<IClusterInfo> getClusters()
+	    {
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+
+	        return agentConnection.getClusters();
+	    }
+	    
+	    /**
+	     * Gets the cluster descriptions
+	     *
+	     * @return cluster descriptions
+	     */
+	    public IClusterInfo getClusterInfo(UUID clusterId)
+	    {
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+
+	        return agentConnection.getClusterInfo(clusterId);
+	    }
+	    
+	    /**
+	     * Creates a cluster or changes the state of an existing one
+	     * 	Central server authentication is required
+	     *
+	     * @return cluster descriptions
+	     */
+	    public UUID regCluster(IClusterInfo clusterInfo)
+	    {
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+
+	        return agentConnection.regCluster(clusterInfo);
+	    }
+	    
+	    /**
+	     * Deletes a cluster
+	     * 	Cluster authentication is required
+	     *
+	     * @return cluster descriptions
+	     */
+	    public void unregCluster(UUID clusterId)
+	    {
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+
+	        agentConnection.unregCluster(clusterId);
+	    }	    
+	    
+	    /**
+	     * Gets the list of short descriptions of infobases registered in the cluster
+	     * 	Cluster authentication is required
+	     *
+	     * @param clusterId cluster ID
+	     * @return list of short descriptions of cluster infobases
+	     */
 	    public List<IInfoBaseInfoShort> getInfoBasesShort(UUID clusterID)
 	    {
-			try {
-				clusterConnector.authenticateCluster(clusterID, "", "");
-			} catch (Exception e) {
-				clusterConnector.authenticateCluster(clusterID, agentUser, agentPasswors);
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
 			}
 			
-	    	List<IInfoBaseInfoShort> clusterInfoBases = clusterConnector.getInfoBasesShort(clusterID);
+			try {
+				authenticateCluster(clusterID, "", "");
+			} catch (Exception e) {
+				authenticateCluster(clusterID, agentUser, agentPasswors);
+			}
+			List<IInfoBaseInfoShort> clusterInfoBases = agentConnection.getInfoBasesShort(clusterID);
 	    	
-	    	// кеширование списка инфобаз
+			// кеширование списка инфобаз. Не дороже ли кеш, чем получать заново список?
 	    	clustersInfoBasesShortCashe.put(clusterID, clusterInfoBases);
-	    	return clusterInfoBases;
-	        
+
+	    	return agentConnection.getInfoBasesShort(clusterID);
+	    }
+	    
+	    /**
+	     * Gets the list of full descriptions of infobases registered in the cluster
+	     * 	Cluster authentication is required
+	     * 	For each infobase in the cluster, infobase authentication is required
+	     * 	If infobase authentication is not performed, only fields that correspond to short infobase description fields will be filled
+	     *
+	     * @param clusterId cluster ID
+	     * @return list of full descriptions of cluster infobases
+	     */	    
+	    public List<IInfoBaseInfo> getInfoBases(UUID clusterId)
+	    {
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+
+	    	return agentConnection.getInfoBases(clusterId);
 	    }
 
+//	    public List<IInfoBaseInfoShort> getInfoBasesShort(UUID clusterID)
+//	    {
+//			try {
+//				clusterConnector.authenticateCluster(clusterID, "", "");
+//			} catch (Exception e) {
+//				clusterConnector.authenticateCluster(clusterID, agentUser, agentPasswors);
+//			}
+//			
+//	    	List<IInfoBaseInfoShort> clusterInfoBases = clusterConnector.getInfoBasesShort(clusterID);
+//	    	
+//	    	// кеширование списка инфобаз
+//	    	clustersInfoBasesShortCashe.put(clusterID, clusterInfoBases);
+//	    	return clusterInfoBases;
+//	        
+//	    }
+	    
+	    /**
+		 * Gets a short infobase description.
+		 * 	Cluster authentication is required
+		 *
+		 * @param clusterId cluster ID
+		 * @param infoBaseId infobase ID
+		 * @return infobase full infobase description
+		 */	
+		public IInfoBaseInfoShort getInfoBaseShortInfo(UUID clusterId, UUID infoBaseId)
+		{
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+			
+			return agentConnection.getInfoBaseShortInfo(clusterId, infoBaseId);
+		}
+		
+	    /**
+		 * Gets the full infobase description.
+		 * 	Cluster authentication is required.
+		 * 	Infobase authentication is required.
+		 *
+		 * @param clusterId cluster ID
+		 * @param infoBaseId infobase ID
+		 * @return infobase full infobase description
+		 */
+		public IInfoBaseInfo getInfoBaseInfo(UUID clusterId, UUID infoBaseId)
+		{
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+			
+			return agentConnection.getInfoBaseInfo(clusterId, infoBaseId);
+		}
+	    
+	    /**
+		 * Gets the infobase name.
+		 *
+		 * @param clusterId cluster ID
+		 * @param infoBaseId infobase ID
+		 * @return infobase full infobase description
+		 */
 	    public String getInfoBaseName(UUID clusterID, UUID infobaseID)
 	    {
 
@@ -381,7 +652,7 @@ public class Config {
 			}
 			// В кеше не нашли, обновляем кеш списка инфобаз и снова ищем
 			if (infobaseName.isBlank()) {
-		    	clusterInfoBases = clusterConnector.getInfoBasesShort(clusterID);
+		    	clusterInfoBases = agentConnection.getInfoBasesShort(clusterID);
 		    	clustersInfoBasesShortCashe.put(clusterID, clusterInfoBases);
 				for (IInfoBaseInfoShort infobase : clusterInfoBases) {
 					if (infobase.getInfoBaseId().equals(infobaseID)){
@@ -392,55 +663,222 @@ public class Config {
 			}
 			
 			return infobaseName;
-			
 	    }
 	    
-	    public List<ISessionInfo> getInfoBaseSessions(UUID clusterID, UUID infobaseId)
+	    /**
+	     * Creates an infobase in a cluster.
+	     * 	Cluster authentication is required
+	     *
+	     * @param clusterId cluster ID
+	     * @param info infobase parameters
+	     */
+	    public UUID createInfoBase(UUID clusterId, IInfoBaseInfo info, int infobaseCreationMode)
 	    {
-	    	List<ISessionInfo> sessions = new ArrayList<>();
-			if (!clusterConnector.isConnected())
-				return sessions;
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
 			
-//			UUID infobaseId = ibs.getInfoBaseId();
-	        return clusterConnector.getInfoBaseSessions(clusterID, infobaseId);
-	        
+			return agentConnection.createInfoBase(clusterId, info, infobaseCreationMode);
+	    }
+	    
+	    /**
+	     * Changes short infobase description.
+	     * 	Infobase authentication is required
+	     *
+	     * @param clusterId cluster ID
+	     * @param info infobase parameters
+	     */
+	    public void updateInfoBaseShort(UUID clusterId, IInfoBaseInfoShort info)
+	    {
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+			
+			agentConnection.updateInfoBaseShort(clusterId, info);
+	    }
+	    	    
+	    /**
+	     * Changes infobase parameters.
+	     * 	Infobase authentication is required
+	     *
+	     * @param clusterId cluster ID
+	     * @param info infobase parameters
+	     */
+	    public void updateInfoBase(UUID clusterId, IInfoBaseInfo info)
+	    {
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+			
+			agentConnection.updateInfoBase(clusterId, info);
+	    }
+	    
+	    /**
+	     * Deletes an infobase. 
+	     * <ul>Infobase authentication is required
+	     *
+	     * @param clusterId cluster ID
+	     * @param infobaseId infobase parameters
+	     * @param dropMode - infobase drop mode:<ul>
+	     * 0 - do not delete the database
+	     * <p>1 - delete the database
+	     * <p>2 - clear the database
+	     */	    
+	    public void dropInfoBase(UUID clusterId, UUID infobaseId, int dropMode)
+	    {
+			if (agentConnection == null)
+			{
+				throw new IllegalStateException("The connection is not established.");
+			}
+			
+			agentConnection.dropInfoBase(clusterId, infobaseId, dropMode);
 	    }
 
-	    public List<ISessionInfo> getSessions(UUID clusterID)
-	    {
-	    	List<ISessionInfo> sessions = new ArrayList<>();
-			if (!clusterConnector.isConnected())
-				return sessions;
-			
-	        return clusterConnector.getSessions(clusterID);
-	        
-	    }
+		/**
+		 * Gets the list of cluster session descriptions.
+		 * 	Cluster authentication is required
+		 *
+		 * @param clusterId  cluster ID
+		 * @return List of session descriptions
+		 */
+		public List<ISessionInfo> getSessions(UUID clusterId) {
+//			if (agentConnection == null) {
+//				throw new IllegalStateException("The connection is not established.");
+//			}
 
-	    public List<IInfoBaseConnectionShort> getConnections(UUID clusterID)
-	    {
-	    	List<IInfoBaseConnectionShort> connections = new ArrayList<>();
-			if (!clusterConnector.isConnected())
-				return connections;
+			if (isConnected())
+				return agentConnection.getSessions(clusterId);
 			
-	        return clusterConnector.getConnectionsShort(clusterID);
-	        
-	    }
+			return new ArrayList<>();
 
-	    public List<IInfoBaseConnectionShort> getInfoBaseConnectionsShort(UUID clusterID, UUID infobaseId)
-	    {
-	    	List<IInfoBaseConnectionShort> connections = new ArrayList<>();
-			if (!clusterConnector.isConnected())
-				return connections;
+		}
+	    
+//		public List<ISessionInfo> getSessions1(UUID clusterID)
+//	    {
+//	    	List<ISessionInfo> sessions = new ArrayList<>();
+//			if (!clusterConnector.isConnected())
+//				return sessions;
+//			
+//	        return clusterConnector.getSessions(clusterID);
+//	        
+//	    }
+
+		/**
+		 * Gets the list of infobase session descriptions.
+		 * Cluster authentication is required
+		 *
+		 * @param clusterId  cluster ID
+		 * @param infobaseId infobase ID
+		 * @return Infobase sessions
+		 */
+		public List<ISessionInfo> getInfoBaseSessions(UUID clusterId, UUID infobaseId) {
+//			if (agentConnection == null) {
+//				throw new IllegalStateException("The connection is not established.");
+//			}
 			
-	        return clusterConnector.getInfoBaseConnectionsShort(clusterID, infobaseId);
-	        
+			if (isConnected())
+				return agentConnection.getInfoBaseSessions(clusterId, infobaseId);
+
+			return new ArrayList<>();
+		}	    
+	    
+//	    public List<ISessionInfo> getInfoBaseSessions1(UUID clusterID, UUID infobaseId)
+//	    {
+//	    	List<ISessionInfo> sessions = new ArrayList<>();
+//			if (!clusterConnector.isConnected())
+//				return sessions;
+//			
+////			UUID infobaseId = ibs.getInfoBaseId();
+//	        return clusterConnector.getInfoBaseSessions(clusterID, infobaseId);
+//	        
+//	    }
+
+	    /**
+	     * Terminates a session in the cluster.
+	     * 	Cluster authentication is required
+	     *
+	     * @param clusterId cluster ID
+	     * @param sessionId infobase ID
+	     * @param message error message for user
+	     */
+		public void terminateSession(UUID clusterId, UUID sessionId, String message) {
+			if (agentConnection == null) {
+				throw new IllegalStateException("The connection is not established.");
+			}
+			
+			agentConnection.terminateSession(clusterId, sessionId, message);
+			
+		}	    
+	    
+	    /**
+	     * Terminates all sessions for all infobases in the cluster
+	     *
+	     * @param clusterId cluster ID
+	     */
+	    public void terminateAllSessions(UUID clusterId)
+	    {
+			if (agentConnection == null) {
+				throw new IllegalStateException("The connection is not established.");
+			}
+
+	        List<ISessionInfo> sessions = agentConnection.getSessions(clusterId);
+	        for (ISessionInfo session : sessions) {
+	        	agentConnection.terminateSession(clusterId, session.getSid());
+	        }
 	    }
 		
-		public void terminateSession(UUID clusterID, UUID sessionId) {
-			
-			clusterConnector.terminateSession(clusterID, sessionId);
-			
+	    /**
+	     * Terminates all sessions for infobase in the cluster
+	     *
+	     * @param clusterId cluster ID
+	     * @param infobaseId infobase ID
+	     */    
+	    public void terminateAllSessionsOfInfobase(UUID clusterId, UUID infobaseId)
+	    {
+			if (agentConnection == null) {
+				throw new IllegalStateException("The connection is not established.");
+			}
+
+	        List<ISessionInfo> sessions = agentConnection.getInfoBaseSessions(clusterId, infobaseId);
+	        for (ISessionInfo session : sessions) {
+	        	agentConnection.terminateSession(clusterId, session.getSid());
+	        }
+	    }			
+		
+		
+		
+		
+		
+		public List<IInfoBaseConnectionShort> getConnectionsShort(UUID clusterID) {
+			if (isConnected())
+				return agentConnection.getConnectionsShort(clusterID);
+
+			return new ArrayList<>();
+
 		}
+
+		public List<IInfoBaseConnectionShort> getInfoBaseConnectionsShort(UUID clusterID, UUID infobaseId) {
+			if (isConnected())
+				return agentConnection.getInfoBaseConnectionsShort(clusterID, infobaseId);
+
+			return new ArrayList<>();
+
+		}
+
+		public List<IInfoBaseConnectionInfo> getInfoBaseConnections(UUID clusterID, UUID processId, UUID infobaseId) {
+			if (isConnected())
+				return agentConnection.getInfoBaseConnections(clusterID, processId, infobaseId);
+
+			return new ArrayList<>();
+
+		}
+		
+		
+		
+		
 		
 	}
 }

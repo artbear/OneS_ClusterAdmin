@@ -145,7 +145,7 @@ public class ClusterProvider {
 		List<String> connectedServers = new ArrayList<>();
 		
 		commonConfig.servers.forEach((server, config) -> {
-			if (config.clusterConnector.isConnected())
+			if (config.isConnected())
 				connectedServers.add(config.getServerKey());
 		});
 		
@@ -158,17 +158,17 @@ public class ClusterProvider {
 		
 	}
 
-	public List<IInfoBaseInfo> getInfobases(Server server){
+	public List<IInfoBaseInfo> getInfobases(Server server){ // not used?
 		
 		List<IInfoBaseInfo> infobases = new ArrayList<>();
 
-		if (server.clusterConnector.isConnected()) {
+		if (server.isConnected()) {
 			
-			List<IClusterInfo> clusterInfoList = server.clusterConnector.getClusterInfoList();
+			List<IClusterInfo> clusterInfoList = server.getClusters();
 			
 			UUID uuid = clusterInfoList.get(0).getClusterId();
 			
-			infobases = server.clusterConnector.getInfoBases(uuid);
+			infobases = server.getInfoBases(uuid);
 		
 		}
 		

@@ -12,7 +12,9 @@ import org.eclipse.swt.widgets.Text;
 
 import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
-import ru.yanygin.clusterAdminLibrary.ClusterConnector;
+import ru.yanygin.clusterAdminLibrary.ClusterConnector_delete;
+import ru.yanygin.clusterAdminLibrary.Config.Server;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.layout.GridLayout;
@@ -30,7 +32,7 @@ public class EditInfobaseDialog extends Dialog {
 	
 	private IInfoBaseInfo infoBaseInfo;
 	private IClusterInfo clusterInfo;
-	private ClusterConnector clusterConnector;
+	private Server server;
 	
 	// Controls
 	private Button btnSessionsDenied;
@@ -92,16 +94,16 @@ public class EditInfobaseDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public EditInfobaseDialog(Shell parentShell, IInfoBaseInfo infoBaseInfo, IClusterInfo clusterInfo, ClusterConnector clusterConnector) {
+	public EditInfobaseDialog(Shell parentShell, Server server, IClusterInfo clusterInfo, IInfoBaseInfo infoBaseInfo) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
 //		super.configureShell(parentShell);
 //		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 	    
-		this.infoBaseInfo = infoBaseInfo;
+		this.server = server;
 		this.clusterInfo = clusterInfo;
-		this.clusterConnector = clusterConnector;
+		this.infoBaseInfo = infoBaseInfo;
 	}
 
 	/**
@@ -398,7 +400,7 @@ public class EditInfobaseDialog extends Dialog {
 			if (safeModeSecurityProfile != infoBaseInfo.getSafeModeSecurityProfileName())
 				infoBaseInfo.setSafeModeSecurityProfileName(safeModeSecurityProfile);
 			
-			clusterConnector.updateInfoBase(clusterInfo.getClusterId(), infoBaseInfo);
+			server.updateInfoBase(clusterInfo.getClusterId(), infoBaseInfo);
 			
 		}
 	}
