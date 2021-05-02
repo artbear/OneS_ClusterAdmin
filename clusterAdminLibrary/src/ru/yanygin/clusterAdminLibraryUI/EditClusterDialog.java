@@ -298,8 +298,8 @@ public class EditClusterDialog extends Dialog {
 		if (clusterInfo == null) {
 			clusterInfo = new ClusterInfo();
 	
-			clusterInfo.setHostName(computerName); // только при создании нового?
-			clusterInfo.setMainPort(ipPort); // только при создании нового?
+			clusterInfo.setHostName(computerName); // разрешено только при создании нового
+			clusterInfo.setMainPort(ipPort); // разрешено только при создании нового
 		}
 		
 		clusterInfo.setName(clusterName);
@@ -317,57 +317,17 @@ public class EditClusterDialog extends Dialog {
 		clusterInfo.setSessionFaultToleranceLevel(faultToleranceLevel);
 		clusterInfo.setLoadBalancingMode(loadBalancingMode);
 		
-		try {
-			server.authenticateAgent("", "");
-		} catch (Exception excp) {
-			
-			AuthenticateDialog authenticateDialog;
-			String username = "";
-			String authExcpMessage = "";
-			int dialogResult;
-			
-			while (true) {
-				
-				try {
-					authenticateDialog = new AuthenticateDialog(getParentShell(), server, clusterInfo, username, "auth to Agent", authExcpMessage);
-					dialogResult = authenticateDialog.open();
-				} catch (Exception exc) {
-					MessageBox messageBox = new MessageBox(getParentShell());
-					messageBox.setMessage(exc.getLocalizedMessage());
-					messageBox.open();
-					return;
-				}
-	
-				if (dialogResult == 0) {
-					try {
-						username = authenticateDialog.getUsername();
-						server.authenticateAgent(username, authenticateDialog.getPassword());
-						break;
-					} catch (Exception exc) {
-						authExcpMessage = exc.getLocalizedMessage();
-						continue;
-					}
-				} else {
-					return;
-				}
+		if (server.authenticateAgent()) {
+
+			try {
+				server.regCluster(clusterInfo);
+			} catch (Exception excp) {
+				excp.printStackTrace();
+				MessageBox messageBox = new MessageBox(getParentShell());
+				messageBox.setMessage(excp.getLocalizedMessage());
+				messageBox.open();
 			}
-			
-//			excp.printStackTrace();
-//			MessageBox messageBox = new MessageBox(getParentShell());
-//			messageBox.setMessage(excp.getLocalizedMessage());
-//			messageBox.open();
 		}
-
-		try {
-//			clusterConnector.authenticateAgent("", "");
-			server.regCluster(clusterInfo);
-		} catch (Exception excp) {
-			excp.printStackTrace();
-			MessageBox messageBox = new MessageBox(getParentShell());
-			messageBox.setMessage(excp.getLocalizedMessage());
-			messageBox.open();
-		}
-
 	}
 
 	private void extractClusterVariablesFromControls() {

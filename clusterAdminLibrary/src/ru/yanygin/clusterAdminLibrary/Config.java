@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.MessageBox;
+
 import com._1c.v8.ibis.admin.AgentAdminException;
 import com._1c.v8.ibis.admin.IAgentAdminConnection;
 import com._1c.v8.ibis.admin.IClusterInfo;
@@ -20,7 +23,7 @@ import com._1c.v8.ibis.admin.client.IAgentAdminConnectorFactory;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-//import ru.yanygin.clusterAdminLibrary.Config.Server;
+import ru.yanygin.clusterAdminLibraryUI.AuthenticateDialog;
 
 public class Config {
 	@SerializedName("Servers")
@@ -64,10 +67,10 @@ public class Config {
 		});
 	}
 
-	/**
-	 * @author yanyg
-	 *
-	 */
+	interface IRunAuthenticate {
+		void performAutenticate(String userName, String password, boolean saveNewUserpass);
+	}
+
 	public class Server {
 		
 		@SerializedName("ManagerHost")
@@ -104,11 +107,11 @@ public class Config {
 		
 		@SerializedName("AgentUser")
 		@Expose
-		public String agentUser;
+		public String agentUserName;
 		
 		@SerializedName("AgentPassword")
 		@Expose
-		public String agentPasswors;
+		public String agentPassword;
 		
 		@SerializedName("Autoconnect")
 		@Expose
@@ -125,12 +128,13 @@ public class Config {
 		private IAgentAdminConnection agentConnection;
 
 		
-//		public UUID clusterID; // deprecated
 		public List<IClusterInfo> clusters;
-		public Map<UUID, List<IInfoBaseInfoShort>> clustersInfoBasesShortCashe;
+		public Map<UUID, List<IInfoBaseInfoShort>> clustersInfoBasesCashe;
 		
 //		public Map<UUID, Pair<String, String>> credentialsClustersCashe;
 //		public Map<UUID, Pair<String, String>> credentialsInfobasesCashe;
+		@SerializedName("ClustersCredentials")
+		@Expose
 		public Map<UUID, String[]> credentialsClustersCashe;
 		public Map<UUID, String[]> credentialsInfobasesCashe;
 
@@ -145,8 +149,8 @@ public class Config {
 			this.localRasV8version = "";
 			this.autoconnect = false;
 			this.available = false;
-			this.agentUser = "";
-			this.agentPasswors = "";
+			this.agentUserName = "";
+			this.agentPassword = "";
 			
 			init();
 
@@ -155,7 +159,8 @@ public class Config {
 		public void init() {
 //			AgentAdminConnectorFactory factory = new AgentAdminConnectorFactory();
 //			this.clusterConnector = new ClusterConnector(factory);
-			this.clustersInfoBasesShortCashe = new HashMap<>();
+			this.clustersInfoBasesCashe = new HashMap<>();
+			this.credentialsClustersCashe = new HashMap<>();
 		}
 		
 		// Ќадо определитьс€ что должно €вл€тьс€ ключем, агент (Server:1540) или менеджер (Server:1541)
@@ -203,19 +208,19 @@ public class Config {
 											String localRasV8version,
 											boolean autoconnect,
 											String agentUser,
-											String agentPasswors) {
+											String agentPassword) {
 			
-			this.managerHost = managerHost;
-			this.managerPort = managerPort;
-			this.agentPort = agentPort;
-			this.rasHost	= rasHost;
-			this.rasPort 	= rasPort;
-			this.useLocalRas = useLocalRas;
-			this.localRasPort = localRasPort;
+			this.managerHost 	= managerHost;
+			this.managerPort 	= managerPort;
+			this.agentPort 		= agentPort;
+			this.rasHost		= rasHost;
+			this.rasPort 		= rasPort;
+			this.useLocalRas 	= useLocalRas;
+			this.localRasPort 	= localRasPort;
 			this.localRasV8version = localRasV8version;
-			this.autoconnect = autoconnect;
-			this.agentUser = agentUser;
-			this.agentPasswors = agentPasswors;
+			this.autoconnect 	= autoconnect;
+			this.agentUserName 		= agentUser;
+			this.agentPassword 	= agentPassword;
 			
 			if (this.autoconnect) {
 				connectAndAuthenticate(false);
@@ -310,24 +315,22 @@ public class Config {
 				if (disconnectAfter) {
 					disconnectFromAgent();	
 				}
-				//auth agent
-				try {
-					authenticateAgent("", "");
-				} catch (Exception e) {
-					authenticateAgent(agentUser, agentPasswors);
-				}
-				//auth clusters
-				clusters = getClusters(); // а надо ли мне здесь получать кластера???
-				clusters.forEach(clusterInfo -> {
-					try {
-						authenticateCluster(clusterInfo.getClusterId(), "", "");
-					} catch (Exception e) {
-						String clusterUser = "CAdmin";
-						String clusterPasswors = "123";
-						authenticateCluster(clusterInfo.getClusterId(), clusterUser, clusterPasswors);
-					}
-
-				});
+				
+				
+//				//auth agent
+//				authenticateAgent();
+//				clusters = getClusters(); // а надо ли мне здесь получать кластера???
+//				//auth clusters
+//				clusters.forEach(clusterInfo -> {
+//					try {
+//						authenticateCluster(clusterInfo.getClusterId(), "", "");
+//					} catch (Exception e) {
+//						String clusterUser = "CAdmin";
+//						String clusterPasswors = "123";
+//						authenticateCluster(clusterInfo.getClusterId(), clusterUser, clusterPasswors);
+//					}
+//
+//				});
 				
 			}
 			catch (Exception excp) {
@@ -420,18 +423,27 @@ public class Config {
 		
 		/**
 		 * Authethicates a central server administrator agent
+		 * Need call of regCluster, getAgentAdmins, regAgentAdmin, unregAgentAdmin
 		 * 
-		 * @param userName cluster administrator name
-		 * @param password cluster administrator password
+		 * @return {@code true} if authenticated, {@code false} overwise
 		 */
-		public void authenticateAgent(String userName, String password)
-		{
+		public boolean authenticateAgent() {
 			if (agentConnection == null)
-			{
 				throw new IllegalStateException("The connection is not established.");
-			}
 
-			agentConnection.authenticateAgent(userName, password);
+			IRunAuthenticate authMethod = (String userName, String password, boolean saveNewUserpass) -> {
+
+				this.agentConnection.authenticateAgent(userName, password);
+
+				// после успешной авторизации сохран€ем новые user/pass в объекте
+				if (saveNewUserpass) {
+					this.agentUserName = userName;
+					this.agentPassword = password;
+				}
+
+			};
+
+			return runAuthProcessWithRequestToUser(agentUserName, agentPassword, authMethod);
 		}
 		
 		/**
@@ -441,16 +453,77 @@ public class Config {
 		 * @param userName cluster administrator name
 		 * @param password cluster administrator password
 		 */
-		public void authenticateCluster(UUID clusterId, String userName, String password)
-		{
+		public boolean authenticateCluster(UUID clusterId) {
 			if (agentConnection == null)
-			{
 				throw new IllegalStateException("The connection is not established.");
-			}
 
-			agentConnection.authenticate(clusterId, userName, password);
+//			String userName;
+//			String password;
+			
+			String[] userAndPassword = credentialsClustersCashe.getOrDefault(clusterId, new String[] {"", ""});
+
+			IRunAuthenticate authMethod = (String userName, String password, boolean saveNewUserpass) -> {
+				
+				agentConnection.authenticate(clusterId, userName, password);
+				
+				// присваиваем новые user/pass после успешной авторизации
+				if (saveNewUserpass)
+					this.credentialsClustersCashe.put(clusterId, new String[] {userName, password});
+				
+				};
+				
+			return runAuthProcessWithRequestToUser(userAndPassword[0], userAndPassword[1], authMethod);
+			
+//			agentConnection.authenticate(clusterId, userAndPassword[0], userAndPassword[1]);
+			
 		}
 		
+		private boolean runAuthProcessWithRequestToUser(String userName, String password, IRunAuthenticate authMethod) {
+			try {
+				// —перва пытаемс€ авторизоватьс€ под сохраненной учеткой (она может быть инициализирована пустыми строками)
+				authMethod.performAutenticate(userName, password, false);
+//				agentConnection.authenticateAgent(agentUser, agentPasswors);
+			} catch (Exception e) {
+
+				AuthenticateDialog authenticateDialog;
+				String authDescription = "Authethicates a central server administrator agent";
+				String authExcpMessage = e.getLocalizedMessage();
+				int dialogResult;
+
+				while (true) { // крутимс€, пока не подойдет пароль, или пользователь не нажмет ќтмена
+
+					try {
+						authenticateDialog = new AuthenticateDialog(Display.getDefault().getActiveShell(), userName, authDescription, authExcpMessage);
+						dialogResult = authenticateDialog.open();
+					} catch (Exception exc) {
+						MessageBox messageBox = new MessageBox(Display.getDefault().getActiveShell());
+						messageBox.setMessage(exc.getLocalizedMessage());
+						messageBox.open();
+						return false;
+					}
+
+					if (dialogResult == 0) {
+//						String newUserName = authenticateDialog.getUsername();
+//						String newPassword = authenticateDialog.getPassword();
+						userName = authenticateDialog.getUsername();
+						password = authenticateDialog.getPassword();
+						try {
+							authMethod.performAutenticate(userName, password, true);
+//							agentConnection.authenticateAgent(agentUser, agentPasswors);
+							break;
+						} catch (Exception exc) {
+							authExcpMessage = exc.getLocalizedMessage();
+							continue;
+						}
+					} else {
+						return false;
+					}
+				}
+
+			}
+			return true;
+		}
+
 		/**
 	     * Adds infobase authentication parameters to the context 
 	     * of the current administration server connection
@@ -540,20 +613,25 @@ public class Config {
 	     */
 	    public List<IInfoBaseInfoShort> getInfoBasesShort(UUID clusterID)
 	    {
-			if (agentConnection == null)
-			{
+			if (agentConnection == null) {
 				throw new IllegalStateException("The connection is not established.");
 			}
 			
-			try {
-				authenticateCluster(clusterID, "", "");
-			} catch (Exception e) {
-				authenticateCluster(clusterID, agentUser, agentPasswors);
-			}
+			if (!authenticateCluster(clusterID))
+				return null; // или пустой список?
+		
+//			try {
+//				authenticateCluster(clusterID, "", "");
+//			} catch (Exception e) {
+////				authenticateCluster(clusterID, agentUser, agentPasswors);
+//				String clusterUser = "CAdmin";
+//				String clusterPasswors = "123";
+//				authenticateCluster(clusterID, clusterUser, clusterPasswors);
+//			}
 			List<IInfoBaseInfoShort> clusterInfoBases = agentConnection.getInfoBasesShort(clusterID);
 	    	
 			// кеширование списка инфобаз. Ќе дороже ли кеш, чем получать заново список?
-	    	clustersInfoBasesShortCashe.put(clusterID, clusterInfoBases);
+	    	clustersInfoBasesCashe.put(clusterID, clusterInfoBases);
 
 	    	return agentConnection.getInfoBasesShort(clusterID);
 	    }
@@ -643,7 +721,7 @@ public class Config {
 			String infobaseName = "";
 	    	
 			// —перва достаем из кеша
-	    	List<IInfoBaseInfoShort> clusterInfoBases = clustersInfoBasesShortCashe.get(clusterID);
+	    	List<IInfoBaseInfoShort> clusterInfoBases = clustersInfoBasesCashe.get(clusterID);
 			for (IInfoBaseInfoShort infobase : clusterInfoBases) {
 				if (infobase.getInfoBaseId().equals(infobaseID)){
 					infobaseName = infobase.getName();
@@ -653,7 +731,7 @@ public class Config {
 			// ¬ кеше не нашли, обновл€ем кеш списка инфобаз и снова ищем
 			if (infobaseName.isBlank()) {
 		    	clusterInfoBases = agentConnection.getInfoBasesShort(clusterID);
-		    	clustersInfoBasesShortCashe.put(clusterID, clusterInfoBases);
+		    	clustersInfoBasesCashe.put(clusterID, clusterInfoBases);
 				for (IInfoBaseInfoShort infobase : clusterInfoBases) {
 					if (infobase.getInfoBaseId().equals(infobaseID)){
 						infobaseName = infobase.getName();

@@ -123,27 +123,29 @@ public class ViewerArea extends Composite {
 		// ѕока что удалить все кластера из списка, может лучше добавить недостающие?
 		TreeItem[] clusterItems = serverItem.getItems();
 		for (TreeItem clusterItem : clusterItems) {
-			clusterItem.dispose();
+//			clusterItem.dispose();
+			disposeTreeItemWithChildren(clusterItem);
 		}
 
 		Server server = (Server) serverItem.getData("ServerConfig");
 		
-		// смена иконки сервера на вкл/выкл
-		serverItem.setImage(server.isConnected() ? serverIconUp : serverIconDown);
+//		// смена иконки сервера на вкл/выкл
+//		serverItem.setImage(server.isConnected() ? serverIconUp : serverIconDown);
 		
 		if (!server.isConnected()) {
 			return;
 		}
 		
-		server.clusters.forEach(clusterInfo -> {
+		List<IClusterInfo> clusters = server.getClusters();
+		clusters.forEach(clusterInfo -> {
 			TreeItem clusterItem = addClusterItemInServersTree(serverItem, clusterInfo);
 			
 			// «аполнение списка инфобаз
-			fillInfobaseOfCluster(clusterItem, server);
+			fillInfobasesOfCluster(clusterItem, server);
 		});
-
+		
 		// –азворачиваем дерево, если список кластеров не пустой
-		serverItem.setExpanded(!server.clusters.isEmpty());
+		serverItem.setExpanded(!clusters.isEmpty());
 	}
 
 	private void initToolbar(Composite parent, ToolBar toolBar, ClusterProvider clusterProvider) {
@@ -343,11 +345,15 @@ public class ViewerArea extends Composite {
 				TreeItem serverItem = item[0];
 				Server server = (Server) serverItem.getData("ServerConfig");
 
-				if (server.connectAndAuthenticate(false)) {
-					serverItem.setImage(serverIconUp);
-				} else {
-					serverItem.setImage(serverIconDown);
-				}
+//				if (server.connectAndAuthenticate(false)) {
+//					serverItem.setImage(serverIconUp);
+//				} else {
+//					serverItem.setImage(serverIconDown);
+//				}
+				server.connectAndAuthenticate(false);
+				// смена иконки сервера на вкл/выкл
+				serverItem.setImage(server.isConnected() ? serverIconUp : serverIconDown);
+
 				fillClustersInTree(serverItem);
 
 			}
@@ -368,26 +374,18 @@ public class ViewerArea extends Composite {
 				serverConfig.disconnectFromAgent();
 				serverItem.setImage(serverIconDown);
 				
-				disposeChildrenTreeItem(serverItem);
 
-//				TreeItem[] clusterItems = serverItem.getItems();
-//				for (TreeItem clusterItem : clusterItems) {
+				TreeItem[] clusterItems = serverItem.getItems();
+				for (TreeItem clusterItem : clusterItems) {
+					disposeTreeItemWithChildren(clusterItem);
 //					TreeItem[] infobaseItems = serverItem.getItems();
 //					for (TreeItem infobaseItem : infobaseItems) {
 //						infobaseItem.dispose();
 //					}
 //					clusterItem.dispose();
-//				}
-
-
-			}
-			
-			private void disposeChildrenTreeItem(TreeItem item) {
-				TreeItem[] childItems = item.getItems();
-				for (TreeItem childItem : childItems) {
-					disposeChildrenTreeItem(childItem);
-					childItem.dispose();
 				}
+
+
 			}
 			
 		});
@@ -466,7 +464,9 @@ public class ViewerArea extends Composite {
 				
 				clusterProvider.removeServerInList(server);
 				
-				item[0].dispose();
+//				item[0].dispose();
+
+				disposeTreeItemWithChildren(item[0]);
 			}
 		});
 		
@@ -604,7 +604,7 @@ public class ViewerArea extends Composite {
 	}
 	
 	
-	private void fillInfobaseOfCluster(TreeItem clusterItem, Server server) {
+	private void fillInfobasesOfCluster(TreeItem clusterItem, Server server) {
 		
 		// ѕока что удалить все базы из списка, может лучше добавить недостающие?
 		TreeItem[] ibItems = clusterItem.getItems();
@@ -841,6 +841,14 @@ public class ViewerArea extends Composite {
 //		});
 	}
 	
+	private void disposeTreeItemWithChildren(TreeItem item) {
+		TreeItem[] childItems = item.getItems();
+		for (TreeItem childItem : childItems) {
+			disposeTreeItemWithChildren(childItem);
+			childItem.dispose();
+		}
+		item.dispose();
+	}
 	
 	private void initIcon() {
 		serverIcon = getImage(getParent().getDisplay(), "/server_24.png");

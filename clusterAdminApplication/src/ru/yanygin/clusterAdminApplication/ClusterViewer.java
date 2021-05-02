@@ -83,8 +83,8 @@ public class ClusterViewer extends ApplicationWindow {
 			
 		if (!servers.isEmpty()) {
 			servers.forEach((server, config) -> {
-				if (config.clusterConnector.isConnected())
-					config.clusterConnector.disconnect();
+				if (config.isConnected())
+					config.disconnectFromAgent();
 			});
 		}
 		

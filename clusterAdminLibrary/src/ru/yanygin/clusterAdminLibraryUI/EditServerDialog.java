@@ -274,8 +274,8 @@ public class EditServerDialog extends Dialog {
 			this.txtLocalRasPort.setText(serverParams.getLocalRasPortAsString());
 			this.btnAutoconnect.setSelection(serverParams.autoconnect);
 
-			this.txtAgentUser.setText(serverParams.agentUser);
-			this.txtAgentPasswors.setText(serverParams.agentPasswors);
+			this.txtAgentUser.setText(serverParams.agentUserName);
+			this.txtAgentPasswors.setText(serverParams.agentPassword);
 		}
 	}
 

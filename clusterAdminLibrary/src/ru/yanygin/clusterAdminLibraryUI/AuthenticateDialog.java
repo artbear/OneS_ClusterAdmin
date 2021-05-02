@@ -37,7 +37,7 @@ public class AuthenticateDialog extends Dialog {
 	private String username;
 	private String password;
 	private String authExcpMessage;
-	private String authenticateType;
+	private String authDescription;
 	
 	public String getUsername() {
 		return username;
@@ -52,18 +52,23 @@ public class AuthenticateDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public AuthenticateDialog(Shell parentShell, Server server, IClusterInfo clusterInfo, String username, String authenticateType, String authExcpMessage) {
+	public AuthenticateDialog(Shell parentShell,
+//			Server server,
+//			IClusterInfo clusterInfo,
+			String username,
+			String authDescription,
+			String authExcpMessage) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
 //		super.configureShell(parentShell);
 //		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 	    
-		this.clusterInfo 		= clusterInfo;
-		this.server 			= server;
+//		this.clusterInfo 		= clusterInfo;
+//		this.server 			= server;
 		this.username 			= username;
+		this.authDescription 	= authDescription;
 		this.authExcpMessage 	= authExcpMessage;
-		this.authenticateType 	= authenticateType;
 		
 	}
 
@@ -84,7 +89,7 @@ public class AuthenticateDialog extends Dialog {
 		
 		lblAuthenticateInfo = new Label(container, SWT.NONE);
 		lblAuthenticateInfo.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, false, 2, 1));
-		lblAuthenticateInfo.setText(authenticateType);
+		lblAuthenticateInfo.setText(authDescription);
 		
 		Label lblUsername = new Label(container, SWT.NONE);
 		lblUsername.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
@@ -114,49 +119,24 @@ public class AuthenticateDialog extends Dialog {
 
 	private void initServerProperties() {
 		this.txtUsername.setText(getUsername());
-		
-//		if (infoBaseInfo != null) {
-//			
-//			// Common properties
-//			this.txtInfobaseName.setText(infoBaseInfo.getName());
-//			this.txtInfobaseDescription.setText(infoBaseInfo.getDescr());
-//			this.txtSecurityLevel.setText(Integer.toString(infoBaseInfo.getSecurityLevel()));
-//			this.btnAllowDistributeLicense.setSelection(infoBaseInfo.getLicenseDistributionAllowed() == 1);
-//			this.btnSheduledJobsDenied.setSelection(infoBaseInfo.isScheduledJobsDenied());
-//			
-//			// DB properties
-//			this.txtServerDBName.setText(infoBaseInfo.getDbServerName());
-//			this.comboServerDBType.setText(infoBaseInfo.getDbms());
-//			this.txtDatabaseDbName.setText(infoBaseInfo.getDbName());
-//			this.txtDatabaseDbUser.setText(infoBaseInfo.getDbUser());
-//			this.txtDatabaseDbPassword.setText(infoBaseInfo.getDbPassword());
-//			
-//			// Lock properties
-//			this.comboLocale.setText(infoBaseInfo.getLocale());
-//						
-//			this.comboDateOffset.setText(Integer.toString(infoBaseInfo.getDateOffset()));
-//			this.btnInfobaseCreationMode.setSelection(false);
-//			
-//			
-//		}
 	}
 
 	private void saveNewServerProperties() {
 
-		try {
-
-			server.authenticateAgent(getUsername(), getPassword());
-
-			server.authenticateCluster(clusterInfo.getClusterId(), getUsername(), getPassword());
-
-			server.addInfoBaseCredentials(clusterInfo.getClusterId(), getUsername(), getPassword());
-
-		} catch (Exception excp) {
-			excp.printStackTrace();
-			MessageBox messageBox = new MessageBox(getParentShell());
-			messageBox.setMessage(excp.getLocalizedMessage());
-			messageBox.open();
-		}
+//		try {
+//
+//			server.authenticateAgent(getUsername(), getPassword());
+//
+//			server.authenticateCluster(clusterInfo.getClusterId(), getUsername(), getPassword());
+//
+//			server.addInfoBaseCredentials(clusterInfo.getClusterId(), getUsername(), getPassword());
+//
+//		} catch (Exception excp) {
+//			excp.printStackTrace();
+//			MessageBox messageBox = new MessageBox(getParentShell());
+//			messageBox.setMessage(excp.getLocalizedMessage());
+//			messageBox.open();
+//		}
 
 	}
 
@@ -178,7 +158,7 @@ public class AuthenticateDialog extends Dialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				extractInfobaseVariablesFromControls();
-				saveNewServerProperties();
+//				saveNewServerProperties();
 				close();
 			}
 		});
