@@ -128,7 +128,7 @@ public class Config {
 		private IAgentAdminConnection agentConnection;
 
 		
-		public List<IClusterInfo> clusters;
+		public Map<UUID, String> clustersNameCashe; // делать кеш информации кластеров или нет
 		public Map<UUID, List<IInfoBaseInfoShort>> clustersInfoBasesCashe;
 		
 //		public Map<UUID, Pair<String, String>> credentialsClustersCashe;
@@ -159,8 +159,10 @@ public class Config {
 		public void init() {
 //			AgentAdminConnectorFactory factory = new AgentAdminConnectorFactory();
 //			this.clusterConnector = new ClusterConnector(factory);
+			this.clustersNameCashe = new HashMap<>();
 			this.clustersInfoBasesCashe = new HashMap<>();
-			this.credentialsClustersCashe = new HashMap<>();
+			if (this.credentialsClustersCashe == null)
+				this.credentialsClustersCashe = new HashMap<>();
 		}
 		
 		// Надо определиться что должно являться ключем, агент (Server:1540) или менеджер (Server:1541)
@@ -208,7 +210,8 @@ public class Config {
 											String localRasV8version,
 											boolean autoconnect,
 											String agentUser,
-											String agentPassword) {
+											String agentPassword,
+											Map<UUID, String[]> credentialsClustersCashe) {
 			
 			this.managerHost 	= managerHost;
 			this.managerPort 	= managerPort;
@@ -219,8 +222,9 @@ public class Config {
 			this.localRasPort 	= localRasPort;
 			this.localRasV8version = localRasV8version;
 			this.autoconnect 	= autoconnect;
-			this.agentUserName 		= agentUser;
+			this.agentUserName 	= agentUser;
 			this.agentPassword 	= agentPassword;
+			this.credentialsClustersCashe 	= credentialsClustersCashe;
 			
 			if (this.autoconnect) {
 				connectAndAuthenticate(false);
@@ -432,7 +436,7 @@ public class Config {
 				throw new IllegalStateException("The connection is not established.");
 
 			IRunAuthenticate authMethod = (String userName, String password, boolean saveNewUserpass) -> {
-
+				
 				this.agentConnection.authenticateAgent(userName, password);
 
 				// после успешной авторизации сохраняем новые user/pass в объекте
@@ -442,8 +446,9 @@ public class Config {
 				}
 
 			};
+			String authDescription = "Authethicates a central server administrator agent";
 
-			return runAuthProcessWithRequestToUser(agentUserName, agentPassword, authMethod);
+			return runAuthProcessWithRequestToUser(authDescription, agentUserName, agentPassword, authMethod);
 		}
 		
 		/**
@@ -460,25 +465,27 @@ public class Config {
 //			String userName;
 //			String password;
 			
-			String[] userAndPassword = credentialsClustersCashe.getOrDefault(clusterId, new String[] {"", ""});
-
 			IRunAuthenticate authMethod = (String userName, String password, boolean saveNewUserpass) -> {
 				
 				agentConnection.authenticate(clusterId, userName, password);
 				
 				// присваиваем новые user/pass после успешной авторизации
-				if (saveNewUserpass)
-					this.credentialsClustersCashe.put(clusterId, new String[] {userName, password});
+				if (saveNewUserpass) {
+					this.credentialsClustersCashe.put(clusterId, new String[] {userName, password, clustersNameCashe.get(clusterId)});
+				}
 				
 				};
 				
-			return runAuthProcessWithRequestToUser(userAndPassword[0], userAndPassword[1], authMethod);
+			String[] userAndPassword = credentialsClustersCashe.getOrDefault(clusterId, new String[] {"", ""});
+			String authDescription = "Authethicates a server cluster administrator";
+			
+			return runAuthProcessWithRequestToUser(authDescription, userAndPassword[0], userAndPassword[1], authMethod);
 			
 //			agentConnection.authenticate(clusterId, userAndPassword[0], userAndPassword[1]);
 			
 		}
 		
-		private boolean runAuthProcessWithRequestToUser(String userName, String password, IRunAuthenticate authMethod) {
+		private boolean runAuthProcessWithRequestToUser(String authDescription, String userName, String password, IRunAuthenticate authMethod) {
 			try {
 				// Сперва пытаемся авторизоваться под сохраненной учеткой (она может быть инициализирована пустыми строками)
 				authMethod.performAutenticate(userName, password, false);
@@ -486,7 +493,7 @@ public class Config {
 			} catch (Exception e) {
 
 				AuthenticateDialog authenticateDialog;
-				String authDescription = "Authethicates a central server administrator agent";
+//				String authDescription = "Authethicates a central server administrator agent";
 				String authExcpMessage = e.getLocalizedMessage();
 				int dialogResult;
 
@@ -542,35 +549,39 @@ public class Config {
 			agentConnection.addAuthentication(clusterId, userName, password);
 		}
 		
-	    /**
-	     * Gets the list of cluster descriptions registered on the central server
-	     *
-	     * @return list of cluster descriptions
-	     */
-	    public List<IClusterInfo> getClusters()
-	    {
-			if (agentConnection == null)
-			{
+		/**
+		 * Gets the list of cluster descriptions registered on the central server
+		 *
+		 * @return list of cluster descriptions
+		 */
+		public List<IClusterInfo> getClusters() {
+			if (agentConnection == null) {
 				throw new IllegalStateException("The connection is not established.");
 			}
 
-	        return agentConnection.getClusters();
-	    }
+			List<IClusterInfo> clusters = agentConnection.getClusters();
+			
+			// кеширование имен кластеров для окна настроек
+			clustersNameCashe.clear();
+			clusters.forEach(cluster ->{
+				clustersNameCashe.put(cluster.getClusterId(), cluster.getName());
+			});
+
+			return clusters;
+		}
 	    
-	    /**
-	     * Gets the cluster descriptions
-	     *
-	     * @return cluster descriptions
-	     */
-	    public IClusterInfo getClusterInfo(UUID clusterId)
-	    {
-			if (agentConnection == null)
-			{
+		/**
+		 * Gets the cluster descriptions
+		 *
+		 * @return cluster descriptions
+		 */
+		public IClusterInfo getClusterInfo(UUID clusterId) {
+			if (agentConnection == null) {
 				throw new IllegalStateException("The connection is not established.");
 			}
 
-	        return agentConnection.getClusterInfo(clusterId);
-	    }
+			return agentConnection.getClusterInfo(clusterId);
+		}
 	    
 	    /**
 	     * Creates a cluster or changes the state of an existing one
@@ -618,7 +629,7 @@ public class Config {
 			}
 			
 			if (!authenticateCluster(clusterID))
-				return null; // или пустой список?
+				return new ArrayList<>(); // или пустой список?
 		
 //			try {
 //				authenticateCluster(clusterID, "", "");

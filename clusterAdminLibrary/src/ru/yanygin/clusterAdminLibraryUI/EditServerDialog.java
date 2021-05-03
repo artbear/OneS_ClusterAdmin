@@ -1,5 +1,9 @@
 package ru.yanygin.clusterAdminLibraryUI;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.graphics.Point;
@@ -27,6 +31,22 @@ import org.eclipse.swt.widgets.TableColumn;
 
 public class EditServerDialog extends Dialog {
 	
+	private Server serverParams;
+
+	private String managerHost;
+	private int managerPort;
+	private int agentPort;
+	private String rasHost;
+	private int rasPort;
+	private boolean useLocalRas;
+	private String localRasV8version;
+	private int localRasPort;
+	private boolean autoconnect;
+	private String agentUser;
+	private String agentPassword;
+	
+	private Map<UUID, String[]> credentialsClustersCashe;
+	
 	private Text txtRASHost;
 	private Text txtRasPort;
 	
@@ -44,24 +64,8 @@ public class EditServerDialog extends Dialog {
 	
 	private Button btnAutoconnect;
 	private Button btnRebuild;
-	private Label lblAgentUser;
 	private Text txtAgentUser;
-	private Label lblAgentPwd;
 	private Text txtAgentPasswors;
-	
-	private Server serverParams;
-
-	private String managerHost;
-	private int managerPort;
-	private int agentPort;
-	private String rasHost;
-	private int rasPort;
-	private boolean useLocalRas;
-	private String localRasV8version;
-	private int localRasPort;
-	private boolean autoconnect;
-	private String agentUser;
-	private String agentPasswors;
 	private Group grpCredentials;
 	private Table tableCredentials;
 
@@ -211,21 +215,23 @@ public class EditServerDialog extends Dialog {
 		Group grpCentralServerCredential = new Group(grpCredentials, SWT.NONE);
 		grpCentralServerCredential.setText("Central server adminstrator");
 		grpCentralServerCredential.setLayout(new GridLayout(4, false));
-		grpCentralServerCredential.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, 2, 1));
+		grpCentralServerCredential.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		
-		lblAgentUser = new Label(grpCentralServerCredential, SWT.NONE);
+		Label lblAgentUser = new Label(grpCentralServerCredential, SWT.NONE);
 		lblAgentUser.setSize(23, 15);
 		lblAgentUser.setText("User");
 		
 		txtAgentUser = new Text(grpCentralServerCredential, SWT.BORDER);
+		txtAgentUser.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		txtAgentUser.setSize(76, 21);
 		txtAgentUser.setToolTipText("Agent host");
 		
-		lblAgentPwd = new Label(grpCentralServerCredential, SWT.NONE);
+		Label lblAgentPwd = new Label(grpCentralServerCredential, SWT.NONE);
 		lblAgentPwd.setSize(50, 15);
 		lblAgentPwd.setText("Password");
 		
 		txtAgentPasswors = new Text(grpCentralServerCredential, SWT.BORDER);
+		txtAgentPasswors.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
 		txtAgentPasswors.setSize(76, 21);
 		txtAgentPasswors.setToolTipText("Agent password");
 		
@@ -241,6 +247,10 @@ public class EditServerDialog extends Dialog {
 		TableColumn tblclmnName = new TableColumn(tableCredentials, SWT.NONE);
 		tblclmnName.setWidth(100);
 		tblclmnName.setText("Name");
+		
+		TableColumn tblclmnID = new TableColumn(tableCredentials, SWT.NONE);
+		tblclmnID.setWidth(100);
+		tblclmnID.setText("ID");
 		
 		TableColumn tblclmnUsername = new TableColumn(tableCredentials, SWT.NONE);
 		tblclmnUsername.setWidth(100);
@@ -276,6 +286,22 @@ public class EditServerDialog extends Dialog {
 
 			this.txtAgentUser.setText(serverParams.agentUserName);
 			this.txtAgentPasswors.setText(serverParams.agentPassword);
+
+			serverParams.credentialsClustersCashe.forEach((uuid, userPass) ->{
+
+				TableItem credentialItem = new TableItem(this.tableCredentials, SWT.NONE);
+				
+				String[] itemText = { "cluster",
+									userPass[2], // clusterName
+									uuid.toString(),
+									userPass[0], // username
+									userPass[1] }; // pass
+				
+				credentialItem.setText(itemText);
+				credentialItem.setData("UUID", uuid);
+				credentialItem.setChecked(false);
+
+			});
 		}
 	}
 
@@ -290,7 +316,15 @@ public class EditServerDialog extends Dialog {
 		localRasV8version 	= comboV8Versions.getText();
 		autoconnect 		= btnAutoconnect.getSelection();
 		agentUser 			= txtAgentUser.getText();
-		agentPasswors 		= txtAgentPasswors.getText();
+		agentPassword 		= txtAgentPasswors.getText();
+		
+		credentialsClustersCashe = new HashMap<>();
+		TableItem[] credentials = tableCredentials.getItems();
+		for (TableItem credential : credentials) {
+			UUID uuid = (UUID) credential.getData("UUID");
+			credentialsClustersCashe.put(uuid, new String[] {credential.getText(3), credential.getText(4), credential.getText(1)});
+		}
+		
 	}
 
 	private void saveNewServerProperties() {
@@ -305,7 +339,8 @@ public class EditServerDialog extends Dialog {
 												localRasV8version,
 												autoconnect,
 												agentUser,
-												agentPasswors);
+												agentPassword,
+												credentialsClustersCashe);
 		}
 	}
 

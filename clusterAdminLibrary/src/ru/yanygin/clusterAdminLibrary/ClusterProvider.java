@@ -68,7 +68,7 @@ public class ClusterProvider {
 		}
 		else {
 			commonConfig.servers.forEach((server, config) -> {
-				config.init();;
+				config.init();
 //				if (config.autoconnect) {
 //					config.connect(false);
 //				}
@@ -91,7 +91,7 @@ public class ClusterProvider {
 		}
 		Gson gson = new GsonBuilder()
 			    .excludeFieldsWithoutExposeAnnotation()
-			    .setPrettyPrinting() // не работает
+			    .setPrettyPrinting() // надо сохранять в человекочитаемом-форматированном виде, но не работает
 			    .create();
 		gson.toJson(commonConfig, commonConfig.getClass(), jsonWriter);
 		

@@ -99,8 +99,10 @@ public class ClusterViewer extends ApplicationWindow {
 		this.mainForm = parent;
 		
 		ToolBar toolBar = this.getToolBarManager().createControl(parent);
+		
+		Menu menu = this.getMenuBarManager().getMenu();
 	
-		ViewerArea container = new ViewerArea(parent, SWT.NONE, toolBar, clusterProvider);
+		ViewerArea container = new ViewerArea(parent, SWT.NONE, menu, toolBar, clusterProvider);
 		
 		//Composite container = alternativeInit(parent);
 		

@@ -68,7 +68,7 @@ public class ViewerArea extends Composite {
 	
 	ClusterProvider clusterProvider;
 
-	public ViewerArea(Composite parent, int style, ToolBar toolBar, ClusterProvider clusterProvider) {
+	public ViewerArea(Composite parent, int style, Menu menu, ToolBar toolBar, ClusterProvider clusterProvider) {
 		super(parent, style);
 		
 		this.clusterProvider = clusterProvider;
@@ -84,6 +84,7 @@ public class ViewerArea extends Composite {
 //		toolBar.setBounds(0, 0, 500, 23); // Для отладки
 		
 		initToolbar(parent, toolBar, clusterProvider);
+		initMainMenu(parent, menu, clusterProvider);
 		
 		initServersTree(sashForm);
 		
@@ -174,6 +175,33 @@ public class ViewerArea extends Composite {
 		});
 
 		ToolItem toolBarItemConnectAllServers = new ToolItem(toolBar, SWT.NONE);
+		toolBarItemConnectAllServers.setText("Connect to all servers");		
+		toolBarItemConnectAllServers.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				
+				connectToAllServers();
+				
+			}
+		});
+	}
+
+	private void initMainMenu(Composite parent, Menu mainMenu, ClusterProvider clusterProvider) {
+//		ToolBar toolBar = applicationWindow.getToolBarManager().createControl(parent);
+				
+		MenuItem toolBarItemFindNewServers = new MenuItem(mainMenu, SWT.NONE);
+		toolBarItemFindNewServers.setText("Find new Servers");
+		toolBarItemFindNewServers.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				List<String> newServers = clusterProvider.findNewServers();
+				if (!newServers.isEmpty()) {
+					fillServersList();
+				}
+			}
+		});
+
+		MenuItem toolBarItemConnectAllServers = new MenuItem(mainMenu, SWT.NONE);
 		toolBarItemConnectAllServers.setText("Connect to all servers");		
 		toolBarItemConnectAllServers.addSelectionListener(new SelectionAdapter() {
 			@Override
