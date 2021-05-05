@@ -8,20 +8,13 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com._1c.v8.ibis.admin.IClusterInfo;
-import ru.yanygin.clusterAdminLibrary.ClusterConnector_delete;
-import ru.yanygin.clusterAdminLibrary.Config.Server;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.DisposeEvent;
 
 public class AuthenticateDialog extends Dialog {
 	
@@ -30,10 +23,6 @@ public class AuthenticateDialog extends Dialog {
 	private Label lblAuthenticateInfo;
 	private Label lblAuthExcpMessage;
 	
-	private IClusterInfo clusterInfo;
-//	private ClusterConnector clusterConnector;
-	private Server server;
-
 	private String username;
 	private String password;
 	private String authExcpMessage;
@@ -52,20 +41,13 @@ public class AuthenticateDialog extends Dialog {
 	 * @param parentShell
 	 * @param serverParams 
 	 */
-	public AuthenticateDialog(Shell parentShell,
-//			Server server,
-//			IClusterInfo clusterInfo,
-			String username,
-			String authDescription,
-			String authExcpMessage) {
+	public AuthenticateDialog(Shell parentShell, String username, String authDescription, String authExcpMessage) {
 		super(parentShell);
 		setShellStyle(SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
 
 //		super.configureShell(parentShell);
 //		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 	    
-//		this.clusterInfo 		= clusterInfo;
-//		this.server 			= server;
 		this.username 			= username;
 		this.authDescription 	= authDescription;
 		this.authExcpMessage 	= authExcpMessage;
@@ -78,11 +60,7 @@ public class AuthenticateDialog extends Dialog {
 	 */
 	@Override
 	protected Control createDialogArea(Composite parent) {
-		parent.addDisposeListener(new DisposeListener() {
-			public void widgetDisposed(DisposeEvent e) {
-//				extractInfobaseVariablesFromControls();
-			}
-		});
+
 		Composite container = (Composite) super.createDialogArea(parent);
 		GridLayout gridLayout = (GridLayout) container.getLayout();
 		gridLayout.numColumns = 2;
@@ -111,36 +89,16 @@ public class AuthenticateDialog extends Dialog {
 		lblAuthExcpMessage.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false, 2, 1));
 		lblAuthExcpMessage.setText(authExcpMessage);
 
-		initServerProperties();
-
+		initProperties();
 		
 		return container;
 	}
 
-	private void initServerProperties() {
+	private void initProperties() {
 		this.txtUsername.setText(getUsername());
 	}
 
-	private void saveNewServerProperties() {
-
-//		try {
-//
-//			server.authenticateAgent(getUsername(), getPassword());
-//
-//			server.authenticateCluster(clusterInfo.getClusterId(), getUsername(), getPassword());
-//
-//			server.addInfoBaseCredentials(clusterInfo.getClusterId(), getUsername(), getPassword());
-//
-//		} catch (Exception excp) {
-//			excp.printStackTrace();
-//			MessageBox messageBox = new MessageBox(getParentShell());
-//			messageBox.setMessage(excp.getLocalizedMessage());
-//			messageBox.open();
-//		}
-
-	}
-
-	private void extractInfobaseVariablesFromControls() {
+	private void extractVariablesFromControls() {
 		
 		username = txtUsername.getText();
 		password = txtPassword.getText();
@@ -157,8 +115,7 @@ public class AuthenticateDialog extends Dialog {
 		button.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				extractInfobaseVariablesFromControls();
-//				saveNewServerProperties();
+				extractVariablesFromControls();
 				close();
 			}
 		});

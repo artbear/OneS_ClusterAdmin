@@ -1,6 +1,5 @@
 package ru.yanygin.clusterAdminLibraryUI;
 
-import java.util.Date;
 import java.util.UUID;
 
 import org.eclipse.jface.dialogs.Dialog;
@@ -15,7 +14,6 @@ import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.InfoBaseInfo;
 
-import ru.yanygin.clusterAdminLibrary.ClusterConnector_delete;
 import ru.yanygin.clusterAdminLibrary.Config.Server;
 
 import org.eclipse.swt.SWT;
@@ -27,20 +25,11 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.widgets.DateTime;
 
 public class CreateInfobaseDialog extends Dialog {
-	
-	private enum securityLevel {
-		Disable, Connection_Only, Constantly
-	}
-	
-//	private IInfoBaseInfo infoBaseInfo;
+		
 	private IClusterInfo clusterInfo;
-//	private ClusterConnector clusterConnector;
+
 	private Server server;
 	private Button btnSheduledJobsDenied;
 	private Button btnAllowDistributeLicense;
@@ -92,7 +81,6 @@ public class CreateInfobaseDialog extends Dialog {
 //		super.configureShell(parentShell);
 //		parentShell.setText("Parameters of the 1C:Enterprise infobase");
 	    
-//		this.infoBaseInfo = infoBaseInfo;
 		this.server = server;
 		this.clusterInfo = clusterInfo;
 		
@@ -104,11 +92,7 @@ public class CreateInfobaseDialog extends Dialog {
 	 */
 	@Override
 	protected Control createDialogArea(Composite parent) {
-		parent.addDisposeListener(new DisposeListener() {
-			public void widgetDisposed(DisposeEvent e) {
-//				extractInfobaseVariablesFromControls();
-			}
-		});
+
 		Composite container = (Composite) super.createDialogArea(parent);
 		GridLayout gridLayout = (GridLayout) container.getLayout();
 		gridLayout.numColumns = 2;
@@ -235,79 +219,46 @@ public class CreateInfobaseDialog extends Dialog {
 		btnSheduledJobsDenied.setText("Sheduled jobs denied");
 		new Label(container, SWT.NONE);
 
-		initServerProperties();
+		initInfobaseProperties();
 
 		
 		return container;
 	}
 
-	private void initServerProperties() {
-//		if (infoBaseInfo != null) {
-//			
-//			// Common properties
-//			this.txtInfobaseName.setText(infoBaseInfo.getName());
-//			this.txtInfobaseDescription.setText(infoBaseInfo.getDescr());
-//			this.txtSecurityLevel.setText(Integer.toString(infoBaseInfo.getSecurityLevel()));
-//			this.btnAllowDistributeLicense.setSelection(infoBaseInfo.getLicenseDistributionAllowed() == 1);
-//			this.btnSheduledJobsDenied.setSelection(infoBaseInfo.isScheduledJobsDenied());
-//			
-//			// DB properties
-//			this.txtServerDBName.setText(infoBaseInfo.getDbServerName());
-//			this.comboServerDBType.setText(infoBaseInfo.getDbms());
-//			this.txtDatabaseDbName.setText(infoBaseInfo.getDbName());
-//			this.txtDatabaseDbUser.setText(infoBaseInfo.getDbUser());
-//			this.txtDatabaseDbPassword.setText(infoBaseInfo.getDbPassword());
-//			
-//			// Lock properties
-//			this.comboLocale.setText(infoBaseInfo.getLocale());
-//						
-//			this.comboDateOffset.setText(Integer.toString(infoBaseInfo.getDateOffset()));
-//			this.btnInfobaseCreationMode.setSelection(false);
-//			
-//			
-//		}
+	private void initInfobaseProperties() {
+
 	}
 
-	private void saveNewServerProperties() {
+	private void saveInfobaseProperties() {
 
-			
-			IInfoBaseInfo infoBaseInfo = new InfoBaseInfo(securityLevel);
-			
-			// Common properties
-				infoBaseInfo.setName(infobaseName);
-			
-				infoBaseInfo.setDescr(infobaseDescription);
-			
-				infoBaseInfo.setLicenseDistributionAllowed(allowDistributeLicense);
-			
-				infoBaseInfo.setScheduledJobsDenied(sheduledJobsDenied);
-			
-//			if (securityLevel != infoBaseInfo.getSecurityLevel()) // не понятно как устанавливается
-//				infoBaseInfo.sec
-			
-			// DB properties
-				infoBaseInfo.setDbServerName(serverDBName);
-			
-				infoBaseInfo.setDbms(serverDBType);
-			
-				infoBaseInfo.setDbName(databaseDbName);
-			
-				infoBaseInfo.setDbUser(databaseDbUser);
-			
-				infoBaseInfo.setDbPassword(databaseDbPassword);
-						
-				infoBaseInfo.setLocale(infobaseLocale);
-			
-				infoBaseInfo.setDateOffset(infobaseDateOffset);
+		IInfoBaseInfo infoBaseInfo = new InfoBaseInfo(securityLevel);
 
-			try {
-				newInfobaseUUID = server.createInfoBase(clusterInfo.getClusterId(), infoBaseInfo, (infobaseCreationMode ? 1 : 0));
-			} catch (Exception excp) {
-				excp.printStackTrace();
-				MessageBox messageBox = new MessageBox(getParentShell());
-				messageBox.setMessage(excp.getLocalizedMessage());
-				messageBox.open();
-			}
+		// Common properties
+		infoBaseInfo.setName(infobaseName);
+		infoBaseInfo.setDescr(infobaseDescription);
+		infoBaseInfo.setLicenseDistributionAllowed(allowDistributeLicense);
+		infoBaseInfo.setScheduledJobsDenied(sheduledJobsDenied);
+
+//		if (securityLevel != infoBaseInfo.getSecurityLevel()) // не понятно как устанавливается
+
+		// DB properties
+		infoBaseInfo.setDbServerName(serverDBName);
+		infoBaseInfo.setDbms(serverDBType);
+		infoBaseInfo.setDbName(databaseDbName);
+		infoBaseInfo.setDbUser(databaseDbUser);
+		infoBaseInfo.setDbPassword(databaseDbPassword);
+		infoBaseInfo.setLocale(infobaseLocale);
+		infoBaseInfo.setDateOffset(infobaseDateOffset);
+
+		try {
+			newInfobaseUUID = server.createInfoBase(clusterInfo.getClusterId(), infoBaseInfo,
+					(infobaseCreationMode ? 1 : 0));
+		} catch (Exception excp) {
+			excp.printStackTrace();
+			MessageBox messageBox = new MessageBox(getParentShell());
+			messageBox.setMessage(excp.getLocalizedMessage());
+			messageBox.open();
+		}
 
 	}
 
@@ -316,20 +267,23 @@ public class CreateInfobaseDialog extends Dialog {
 		// Common properties
 		infobaseName 			= txtInfobaseName.getText();
 		infobaseDescription 	= txtInfobaseDescription.getText();
-		switch (comboSecurityLevel.getText()) {
-		case "Disable":
-			securityLevel 		= 0;
-			break;
-		case "Connection only":
-			securityLevel 		= 1;
-			break;
-		case "Constantly":
-			securityLevel 		= 2;
-			break;
-		default:
-			securityLevel 		= 0;
-			break;
-		}
+		
+		securityLevel 	= (int) comboSecurityLevel.getData(comboSecurityLevel.getText());
+//		switch (comboSecurityLevel.getText()) {
+//		case "Disable":
+//			securityLevel 		= 0;
+//			break;
+//		case "Connection only":
+//			securityLevel 		= 1;
+//			break;
+//		case "Constantly":
+//			securityLevel 		= 2;
+//			break;
+//		default:
+//			securityLevel 		= 0;
+//			break;
+//		}
+		
 		allowDistributeLicense 	= btnAllowDistributeLicense.getSelection() ? 1 : 0;
 		sheduledJobsDenied 		= btnSheduledJobsDenied.getSelection();
 		infobaseCreationMode 	= btnInfobaseCreationMode.getSelection();
@@ -356,7 +310,7 @@ public class CreateInfobaseDialog extends Dialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				extractInfobaseVariablesFromControls();
-				saveNewServerProperties();
+				saveInfobaseProperties();
 				close();
 			}
 		});

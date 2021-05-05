@@ -1,8 +1,5 @@
 package ru.yanygin.clusterAdminLibraryUI;
 
-import java.util.Calendar;
-import java.util.Date;
-
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swt.graphics.Point;
@@ -13,10 +10,6 @@ import org.eclipse.swt.widgets.Text;
 
 import com._1c.v8.ibis.admin.ClusterInfo;
 import com._1c.v8.ibis.admin.IClusterInfo;
-import com._1c.v8.ibis.admin.IInfoBaseInfo;
-import com._1c.v8.ibis.admin.InfoBaseInfo;
-
-import ru.yanygin.clusterAdminLibrary.ClusterConnector_delete;
 import ru.yanygin.clusterAdminLibrary.Config.Server;
 
 import org.eclipse.swt.SWT;
@@ -31,10 +24,6 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.custom.StackLayout;
-import org.eclipse.swt.layout.RowLayout;
-import org.eclipse.swt.widgets.DateTime;
 
 public class EditClusterDialog extends Dialog {
 	
@@ -294,7 +283,7 @@ public class EditClusterDialog extends Dialog {
 		}
 	}
 
-	private void saveNewServerProperties() {
+	private void saveNewClusterProperties() {
 		if (clusterInfo == null) {
 			clusterInfo = new ClusterInfo();
 	
@@ -317,7 +306,7 @@ public class EditClusterDialog extends Dialog {
 		clusterInfo.setSessionFaultToleranceLevel(faultToleranceLevel);
 		clusterInfo.setLoadBalancingMode(loadBalancingMode);
 		
-		if (server.authenticateAgent()) {
+		if (server.authenticateAgent()) { // перенести в server.regCluster
 
 			try {
 				server.regCluster(clusterInfo);
@@ -362,7 +351,7 @@ public class EditClusterDialog extends Dialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				extractClusterVariablesFromControls();
-				saveNewServerProperties();
+				saveNewClusterProperties();
 				close();
 			}
 		});
@@ -374,7 +363,7 @@ public class EditClusterDialog extends Dialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				extractClusterVariablesFromControls();
-				saveNewServerProperties();
+				saveNewClusterProperties();
 			}
 		});
 		Button buttonReset = createButton(parent, IDialogConstants.PROCEED_ID, "Reset to PROF/CORP", false);

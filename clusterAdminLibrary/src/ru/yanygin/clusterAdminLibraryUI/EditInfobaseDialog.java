@@ -12,7 +12,6 @@ import org.eclipse.swt.widgets.Text;
 
 import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
-import ru.yanygin.clusterAdminLibrary.ClusterConnector_delete;
 import ru.yanygin.clusterAdminLibrary.Config.Server;
 
 import org.eclipse.swt.SWT;
@@ -23,8 +22,6 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.DateTime;
 
@@ -61,7 +58,6 @@ public class EditInfobaseDialog extends Dialog {
 	// fields of infobase
 	private String infobaseName;
 	private String infobaseDescription;
-	private String securityLevel;
 	
 	private String serverDBName;
 	private String serverDBType; // MSSQLServer, PostgreSQL, IBMDB2, OracleDatabase
@@ -73,9 +69,7 @@ public class EditInfobaseDialog extends Dialog {
 	
 	private boolean sessionsDenied;
 	private Date sessionsDeniedFrom;
-//	private String lockStartTime;
 	private Date sessionsDeniedTo;
-//	private String lockStopTime;
 	private String deniedMessage;
 	private String permissionCode;
 	private String deniedParameter;
@@ -112,11 +106,7 @@ public class EditInfobaseDialog extends Dialog {
 	 */
 	@Override
 	protected Control createDialogArea(Composite parent) {
-		parent.addDisposeListener(new DisposeListener() {
-			public void widgetDisposed(DisposeEvent e) {
-				extractInfobaseVariablesFromControls();
-			}
-		});
+
 		Composite container = (Composite) super.createDialogArea(parent);
 		GridLayout gridLayout = (GridLayout) container.getLayout();
 		gridLayout.numColumns = 2;
@@ -161,7 +151,6 @@ public class EditInfobaseDialog extends Dialog {
 		lblServerDBType.setText("DBMS type");
 		
 		comboServerDBType = new Combo(container, SWT.READ_ONLY);
-//		comboServerDBType.setItems(new String[] {"MSSQLServer", "PostgreSQL", "(?IBM DB2)", "(?Oracle Database)"});
 		comboServerDBType.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 
 		comboServerDBType.add("MSSQLServer");
@@ -282,13 +271,13 @@ public class EditInfobaseDialog extends Dialog {
 		txtSafeModeSecurityProfile.setToolTipText("Safe mode security profile");
 		txtSafeModeSecurityProfile.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 
-		initServerProperties();
+		initInfobaseProperties();
 
 		
 		return container;
 	}
 
-	private void initServerProperties() {
+	private void initInfobaseProperties() {
 		if (infoBaseInfo != null) {
 			
 			// Common properties
@@ -328,78 +317,41 @@ public class EditInfobaseDialog extends Dialog {
 			this.txtSecurityProfile.setText(infoBaseInfo.getSecurityProfileName());
 			this.txtSafeModeSecurityProfile.setText(infoBaseInfo.getSafeModeSecurityProfileName());
 			
-			
 		}
 	}
 
-	private void saveNewServerProperties() {
+	private void saveInfobaseProperties() {
 		if (infoBaseInfo != null) {
-			
+
 			// Common properties
-			if (!infobaseName.equals(infoBaseInfo.getName()))
-				infoBaseInfo.setName(infobaseName);
-			
-			if (!infobaseDescription.equals(infoBaseInfo.getDescr()))
-				infoBaseInfo.setDescr(infobaseDescription);
-			
-			if (allowDistributeLicense != infoBaseInfo.getLicenseDistributionAllowed())
-				infoBaseInfo.setLicenseDistributionAllowed(allowDistributeLicense);
-			
-			if (sheduledJobsDenied != infoBaseInfo.isScheduledJobsDenied())
-				infoBaseInfo.setScheduledJobsDenied(sheduledJobsDenied);
-			
-//			if (secureConnection != infoBaseInfo.getSecurityLevel()) // не меняется
-//				infoBaseInfo.se(secureConnection);
-			
+			infoBaseInfo.setName(infobaseName);
+			infoBaseInfo.setDescr(infobaseDescription);
+			infoBaseInfo.setLicenseDistributionAllowed(allowDistributeLicense);
+			infoBaseInfo.setScheduledJobsDenied(sheduledJobsDenied);
+
 			// DB properties
-			if (!serverDBName.equals(infoBaseInfo.getDbServerName()))
-				infoBaseInfo.setDbServerName(serverDBName);
-			
-			if (!serverDBType.equals(infoBaseInfo.getDbms()))
-				infoBaseInfo.setDbms(serverDBType);
-			
-			if (!databaseDbName.equals(infoBaseInfo.getDbName()))
-				infoBaseInfo.setDbName(databaseDbName);
-			
-			if (!databaseDbUser.equals(infoBaseInfo.getDbUser()))
-				infoBaseInfo.setDbUser(databaseDbUser);
-			
-			if (!databaseDbPassword.equals(infoBaseInfo.getDbPassword()))
-				infoBaseInfo.setDbPassword(databaseDbPassword);
-			
+			infoBaseInfo.setDbServerName(serverDBName);
+			infoBaseInfo.setDbms(serverDBType);
+			infoBaseInfo.setDbName(databaseDbName);
+			infoBaseInfo.setDbUser(databaseDbUser);
+			infoBaseInfo.setDbPassword(databaseDbPassword);
+
 			// Lock properties
-			if (sessionsDenied != infoBaseInfo.isSessionsDenied())
-				infoBaseInfo.setSessionsDenied(sessionsDenied);
-			
-			if (sessionsDeniedFrom != infoBaseInfo.getDeniedFrom())
-				infoBaseInfo.setDeniedFrom(sessionsDeniedFrom);
-			
-			if (sessionsDeniedTo != infoBaseInfo.getDeniedTo())
-				infoBaseInfo.setDeniedTo(sessionsDeniedTo);
-			
-			if (deniedMessage != infoBaseInfo.getDeniedMessage())
-				infoBaseInfo.setDeniedMessage(deniedMessage);
-			
-			if (permissionCode != infoBaseInfo.getPermissionCode())
-				infoBaseInfo.setPermissionCode(permissionCode);
-			
-			if (deniedParameter != infoBaseInfo.getDeniedParameter())
-				infoBaseInfo.setDeniedParameter(deniedParameter);
-			
+			infoBaseInfo.setSessionsDenied(sessionsDenied);
+			infoBaseInfo.setDeniedFrom(sessionsDeniedFrom);
+			infoBaseInfo.setDeniedTo(sessionsDeniedTo);
+			infoBaseInfo.setDeniedMessage(deniedMessage);
+			infoBaseInfo.setPermissionCode(permissionCode);
+			infoBaseInfo.setDeniedParameter(deniedParameter);
+
 			// ExternalSessionManager properties
-			if (externalSessionManagerConnectionString != infoBaseInfo.getExternalSessionManagerConnectionString())
-				infoBaseInfo.setExternalSessionManagerConnectionString(externalSessionManagerConnectionString);
-			
-			if (externalSessionManagerRequired != infoBaseInfo.getExternalSessionManagerRequired())
-				infoBaseInfo.setExternalSessionManagerRequired(externalSessionManagerRequired);
-			
-			// SecurityProfile properties			
-			if (securityProfile != infoBaseInfo.getSecurityProfileName())
-				infoBaseInfo.setSecurityProfileName(securityProfile);
-			
-			if (safeModeSecurityProfile != infoBaseInfo.getSafeModeSecurityProfileName())
-				infoBaseInfo.setSafeModeSecurityProfileName(safeModeSecurityProfile);
-			
+			infoBaseInfo.setExternalSessionManagerConnectionString(externalSessionManagerConnectionString);
+			infoBaseInfo.setExternalSessionManagerRequired(externalSessionManagerRequired);
+
+			// SecurityProfile properties
+			infoBaseInfo.setSecurityProfileName(securityProfile);
+			infoBaseInfo.setSafeModeSecurityProfileName(safeModeSecurityProfile);
+
 			server.updateInfoBase(clusterInfo.getClusterId(), infoBaseInfo);
 			
 		}
@@ -410,7 +362,6 @@ public class EditInfobaseDialog extends Dialog {
 		// Common properties
 		infobaseName 			= txtInfobaseName.getText();
 		infobaseDescription 	= txtInfobaseDescription.getText();
-		securityLevel 			= txtSecurityLevel.getText();
 		allowDistributeLicense 	= btnAllowDistributeLicense.getSelection() ? 1 : 0;
 		sheduledJobsDenied 		= btnSheduledJobsDenied.getSelection();
 		
@@ -456,11 +407,13 @@ public class EditInfobaseDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		Button buttonOK = createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
+		Button buttonOK = createButton(parent, IDialogConstants.FINISH_ID, IDialogConstants.OK_LABEL, true);
 		buttonOK.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				saveNewServerProperties();
+				extractInfobaseVariablesFromControls();
+				saveInfobaseProperties();
+				close();
 			}
 		});
 		
@@ -471,7 +424,7 @@ public class EditInfobaseDialog extends Dialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				extractInfobaseVariablesFromControls();
-				saveNewServerProperties();
+				saveInfobaseProperties();
 			}
 		});
 	}

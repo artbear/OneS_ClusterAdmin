@@ -16,7 +16,9 @@ import com._1c.v8.ibis.admin.IInfoBaseConnectionInfo;
 import com._1c.v8.ibis.admin.IInfoBaseConnectionShort;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfoShort;
+import com._1c.v8.ibis.admin.IObjectLockInfo;
 import com._1c.v8.ibis.admin.ISessionInfo;
+import com._1c.v8.ibis.admin.IWorkingProcessInfo;
 import com._1c.v8.ibis.admin.client.AgentAdminConnectorFactory;
 import com._1c.v8.ibis.admin.client.IAgentAdminConnector;
 import com._1c.v8.ibis.admin.client.IAgentAdminConnectorFactory;
@@ -128,7 +130,7 @@ public class Config {
 		private IAgentAdminConnection agentConnection;
 
 		
-		public Map<UUID, String> clustersNameCashe; // делать кеш информации кластеров или нет
+//		public Map<UUID, String> clustersNameCashe; // делать кеш информации кластеров или нет
 		public Map<UUID, List<IInfoBaseInfoShort>> clustersInfoBasesCashe;
 		
 //		public Map<UUID, Pair<String, String>> credentialsClustersCashe;
@@ -159,7 +161,11 @@ public class Config {
 		public void init() {
 //			AgentAdminConnectorFactory factory = new AgentAdminConnectorFactory();
 //			this.clusterConnector = new ClusterConnector(factory);
-			this.clustersNameCashe = new HashMap<>();
+//			this.clustersNameCashe = new HashMap<>();
+			
+			this.agentUserName = "";
+			this.agentPassword = "";
+			
 			this.clustersInfoBasesCashe = new HashMap<>();
 			if (this.credentialsClustersCashe == null)
 				this.credentialsClustersCashe = new HashMap<>();
@@ -439,7 +445,7 @@ public class Config {
 				
 				this.agentConnection.authenticateAgent(userName, password);
 
-				// после успешной авторизации сохраняем новые user/pass в объекте
+				// сохраняем новые user/pass после успешной авторизации
 				if (saveNewUserpass) {
 					this.agentUserName = userName;
 					this.agentPassword = password;
@@ -462,16 +468,13 @@ public class Config {
 			if (agentConnection == null)
 				throw new IllegalStateException("The connection is not established.");
 
-//			String userName;
-//			String password;
-			
 			IRunAuthenticate authMethod = (String userName, String password, boolean saveNewUserpass) -> {
 				
 				agentConnection.authenticate(clusterId, userName, password);
 				
-				// присваиваем новые user/pass после успешной авторизации
-				if (saveNewUserpass) {
-					this.credentialsClustersCashe.put(clusterId, new String[] {userName, password, clustersNameCashe.get(clusterId)});
+				// сохраняем новые user/pass после успешной авторизации
+				if (saveNewUserpass) { // && this.saveCredentialsInConfig
+					this.credentialsClustersCashe.put(clusterId, new String[] {userName, password, getClusterInfo(clusterId).getName()});
 				}
 				
 				};
@@ -562,9 +565,14 @@ public class Config {
 			List<IClusterInfo> clusters = agentConnection.getClusters();
 			
 			// кеширование имен кластеров для окна настроек
-			clustersNameCashe.clear();
+//			clustersNameCashe.clear();
 			clusters.forEach(cluster ->{
-				clustersNameCashe.put(cluster.getClusterId(), cluster.getName());
+//				clustersNameCashe.put(cluster.getClusterId(), cluster.getName());
+				
+				// обновление имени кластера в кеше credentials
+				String[] credentialClustersCashe = credentialsClustersCashe.get(cluster.getClusterId());
+				if (credentialClustersCashe != null)
+					credentialClustersCashe[2] = cluster.getName();
 			});
 
 			return clusters;
@@ -631,14 +639,6 @@ public class Config {
 			if (!authenticateCluster(clusterID))
 				return new ArrayList<>(); // или пустой список?
 		
-//			try {
-//				authenticateCluster(clusterID, "", "");
-//			} catch (Exception e) {
-////				authenticateCluster(clusterID, agentUser, agentPasswors);
-//				String clusterUser = "CAdmin";
-//				String clusterPasswors = "123";
-//				authenticateCluster(clusterID, clusterUser, clusterPasswors);
-//			}
 			List<IInfoBaseInfoShort> clusterInfoBases = agentConnection.getInfoBasesShort(clusterID);
 	    	
 			// кеширование списка инфобаз. Не дороже ли кеш, чем получать заново список?
@@ -925,28 +925,22 @@ public class Config {
 	     * @param clusterId cluster ID
 	     * @param infobaseId infobase ID
 	     */    
-	    public void terminateAllSessionsOfInfobase(UUID clusterId, UUID infobaseId)
-	    {
+		public void terminateAllSessionsOfInfobase(UUID clusterId, UUID infobaseId) {
 			if (agentConnection == null) {
 				throw new IllegalStateException("The connection is not established.");
 			}
 
-	        List<ISessionInfo> sessions = agentConnection.getInfoBaseSessions(clusterId, infobaseId);
-	        for (ISessionInfo session : sessions) {
-	        	agentConnection.terminateSession(clusterId, session.getSid());
-	        }
-	    }			
-		
-		
-		
-		
+			List<ISessionInfo> sessions = agentConnection.getInfoBaseSessions(clusterId, infobaseId);
+			for (ISessionInfo session : sessions) {
+				agentConnection.terminateSession(clusterId, session.getSid());
+			}
+		}
 		
 		public List<IInfoBaseConnectionShort> getConnectionsShort(UUID clusterID) {
 			if (isConnected())
 				return agentConnection.getConnectionsShort(clusterID);
 
 			return new ArrayList<>();
-
 		}
 
 		public List<IInfoBaseConnectionShort> getInfoBaseConnectionsShort(UUID clusterID, UUID infobaseId) {
@@ -954,7 +948,6 @@ public class Config {
 				return agentConnection.getInfoBaseConnectionsShort(clusterID, infobaseId);
 
 			return new ArrayList<>();
-
 		}
 
 		public List<IInfoBaseConnectionInfo> getInfoBaseConnections(UUID clusterID, UUID processId, UUID infobaseId) {
@@ -962,9 +955,62 @@ public class Config {
 				return agentConnection.getInfoBaseConnections(clusterID, processId, infobaseId);
 
 			return new ArrayList<>();
-
 		}
 		
+		public List<IObjectLockInfo> getLocks(UUID clusterID) {
+			if (isConnected())
+				return agentConnection.getLocks(clusterID);
+
+			return new ArrayList<>();
+		}
+		
+		public List<IObjectLockInfo> getInfoBaseLocks(UUID clusterID, UUID infobaseId) {
+			if (isConnected())
+				return agentConnection.getInfoBaseLocks(clusterID, infobaseId);
+
+			return new ArrayList<>();
+		}
+		
+		public List<IObjectLockInfo> getConnectionLocks(UUID clusterID, UUID connectionId) {
+			if (isConnected())
+				return agentConnection.getConnectionLocks(clusterID, connectionId);
+
+			return new ArrayList<>();
+		}
+		
+		public List<IObjectLockInfo> getSessionLocks(UUID clusterID, UUID infobaseId, UUID sid) {
+			if (isConnected())
+				return agentConnection.getSessionLocks(clusterID, infobaseId, sid);
+
+			return new ArrayList<>();
+		}
+		
+		
+		public List<IWorkingProcessInfo> getWorkingProcesses(UUID clusterID) {
+			if (isConnected())
+				return agentConnection.getWorkingProcesses(clusterID);
+
+			return new ArrayList<>();
+		}	
+		
+		
+		public IWorkingProcessInfo getWorkingProcessInfo(UUID clusterID, UUID processID) {
+
+			if (agentConnection == null) {
+				throw new IllegalStateException("The connection is not established.");
+			}
+			
+//			if (isConnected())
+			return agentConnection.getWorkingProcessInfo(clusterID, processID);
+		}	
+
+		
+		public List<IWorkingProcessInfo> getServerWorkingProcesses(UUID clusterID, UUID serverId) {
+			if (isConnected())
+				return agentConnection.getServerWorkingProcesses(clusterID, serverId);
+
+			return new ArrayList<>();
+		}	
 		
 		
 		

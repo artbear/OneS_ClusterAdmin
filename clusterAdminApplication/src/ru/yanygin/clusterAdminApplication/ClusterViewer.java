@@ -1,13 +1,10 @@
 package ru.yanygin.clusterAdminApplication;
 
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.StatusLineManager;
 import org.eclipse.jface.action.ToolBarManager;
-import org.eclipse.jface.internal.provisional.action.ToolBarManager2;
 import org.eclipse.jface.window.ApplicationWindow;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
@@ -16,7 +13,6 @@ import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Cursor;
-import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Composite;
@@ -29,23 +25,14 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
-import org.eclipse.swt.widgets.TreeItem;
-
-import com._1c.v8.ibis.admin.IInfoBaseInfo;
-import com._1c.v8.ibis.admin.ISessionInfo;
-import com._1c.v8.ibis.admin.InfoBaseInfo;
-
 import ru.yanygin.clusterAdminLibrary.ClusterProvider;
 import ru.yanygin.clusterAdminLibrary.Config.Server;
 //import ru.yanygin.clusterAdminLibraryUI.ServersTree;
 import ru.yanygin.clusterAdminLibraryUI.ViewerArea;
 
 import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.custom.ViewForm;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.wb.swt.SWTResourceManager;
