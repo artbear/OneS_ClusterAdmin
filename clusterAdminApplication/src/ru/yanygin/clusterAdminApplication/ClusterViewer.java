@@ -36,6 +36,8 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.wb.swt.SWTResourceManager;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
 
 public class ClusterViewer extends ApplicationWindow {
 	
@@ -137,10 +139,27 @@ public class ClusterViewer extends ApplicationWindow {
 		
 		SashForm sashForm = new SashForm(container, SWT.NONE);
 		
-		serversTree = new Tree(sashForm, SWT.BORDER);
+		serversTree = new Tree(sashForm, SWT.BORDER | SWT.FULL_SELECTION);
+		serversTree.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+			}
+		});
+		serversTree.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseDown(MouseEvent e) {
+				int button = e.button;
+			}
+		});
 		serversTree.setHeaderVisible(true);
+		serversTree.setSortDirection(SWT.DOWN);
 		
 		TreeColumn columnServer = new TreeColumn(serversTree, SWT.LEFT);
+		columnServer.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+			}
+		});
 		columnServer.setText("Cluster/Infobase");
 		columnServer.setWidth(200);
 		

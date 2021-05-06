@@ -925,15 +925,22 @@ public class Config {
 	     * @param clusterId cluster ID
 	     * @param infobaseId infobase ID
 	     */    
-		public void terminateAllSessionsOfInfobase(UUID clusterId, UUID infobaseId) {
+		public void terminateAllSessionsOfInfobase(UUID clusterId, UUID infobaseId, boolean onlyUsersSession) {
 			if (agentConnection == null) {
 				throw new IllegalStateException("The connection is not established.");
 			}
 
 			List<ISessionInfo> sessions = agentConnection.getInfoBaseSessions(clusterId, infobaseId);
 			for (ISessionInfo session : sessions) {
+				if (onlyUsersSession && !isUserSession(session.getAppId()))
+					continue;
+				
 				agentConnection.terminateSession(clusterId, session.getSid());
 			}
+		}
+
+		private boolean isUserSession(String appName) {
+			return appName.equals("1cv8c") || appName.equals("1cv8c");
 		}
 		
 		public List<IInfoBaseConnectionShort> getConnectionsShort(UUID clusterID) {
