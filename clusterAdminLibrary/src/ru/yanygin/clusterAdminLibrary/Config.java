@@ -139,6 +139,12 @@ public class Config {
 		@Expose
 		public Map<UUID, String[]> credentialsClustersCashe;
 		public Map<UUID, String[]> credentialsInfobasesCashe;
+		
+		private final static String THIN_CLIENT = "1CV8C";
+		private final static String THICK_CLIENT = "1CV8";
+		private final static String DESIGNER = "Designer";
+		private final static String SERVER_CONSOLE = "SrvrConsole";
+		private final static String RAS_CONSOLE = "RAS";
 
 		public Server(String serverName) {
 //			this.managerHost = calcHostName(serverName);
@@ -802,6 +808,8 @@ public class Config {
 				throw new IllegalStateException("The connection is not established.");
 			}
 			
+			agentConnection.addAuthentication(clusterId, "", "");
+			
 			agentConnection.updateInfoBase(clusterId, info);
 	    }
 	    
@@ -940,7 +948,7 @@ public class Config {
 		}
 
 		private boolean isUserSession(String appName) {
-			return appName.equals("1cv8c") || appName.equals("1cv8c");
+			return appName.equals(THIN_CLIENT) || appName.equals(THICK_CLIENT);
 		}
 		
 		public List<IInfoBaseConnectionShort> getConnectionsShort(UUID clusterID) {

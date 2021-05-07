@@ -609,6 +609,32 @@ public class ViewerArea extends Composite {
 		infobaseMenuSessionManage.setMenu(infobaseSubMenuSessionManage);
 //		infobaseSubMenuSessionManage.setImage(terminateSessionIcon);
 		
+		MenuItem menuItemLockUserSessionsNow = new MenuItem(infobaseSubMenuSessionManage, SWT.NONE);
+		menuItemLockUserSessionsNow.setText("Lock sessions now");
+		menuItemLockUserSessionsNow.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent event) {
+				TreeItem[] item = serversTree.getSelection();
+				if (item.length == 0)
+					return;
+				
+				Server server = getServerConfigFromParentItem(item[0]);
+				IClusterInfo clusterInfo = getClusterInfoFromParentItem(item[0]);
+				IInfoBaseInfoShort infoBaseInfoShort = (IInfoBaseInfoShort) item[0].getData("InfoBaseInfoShort");
+				IInfoBaseInfo infoBaseInfo = server.getInfoBaseInfo(clusterInfo.getClusterId(), infoBaseInfoShort.getInfoBaseId());
+				
+				infoBaseInfo.setScheduledJobsDenied(true);
+				infoBaseInfo.setSessionsDenied(true);
+				infoBaseInfo.setDeniedFrom(null);
+				infoBaseInfo.setDeniedTo(null);
+				infoBaseInfo.setDeniedMessage("");
+				infoBaseInfo.setDeniedParameter("");
+				infoBaseInfo.setPermissionCode("");
+				
+				server.updateInfoBase(clusterInfo.getClusterId(), infoBaseInfo);
+			}
+		});		
+
 		MenuItem menuItemTerminateAllSessions = new MenuItem(infobaseSubMenuSessionManage, SWT.NONE);
 		menuItemTerminateAllSessions.setText("Terminate all sessions");
 		menuItemTerminateAllSessions.addSelectionListener(new SelectionAdapter() {
