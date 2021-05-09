@@ -145,6 +145,7 @@ public class Config {
 		private final static String DESIGNER = "Designer";
 		private final static String SERVER_CONSOLE = "SrvrConsole";
 		private final static String RAS_CONSOLE = "RAS";
+		private final static String JOBSCHEDULER = "JobSCheduler";
 
 		public Server(String serverName) {
 //			this.managerHost = calcHostName(serverName);
@@ -636,22 +637,20 @@ public class Config {
 	     * @param clusterId cluster ID
 	     * @return list of short descriptions of cluster infobases
 	     */
-	    public List<IInfoBaseInfoShort> getInfoBasesShort(UUID clusterID)
-	    {
-			if (agentConnection == null) {
+		public List<IInfoBaseInfoShort> getInfoBasesShort(UUID clusterID) {
+			if (agentConnection == null)
 				throw new IllegalStateException("The connection is not established.");
-			}
-			
+
 			if (!authenticateCluster(clusterID))
 				return new ArrayList<>(); // или пустой список?
-		
-			List<IInfoBaseInfoShort> clusterInfoBases = agentConnection.getInfoBasesShort(clusterID);
-	    	
-			// кеширование списка инфобаз. Ќе дороже ли кеш, чем получать заново список?
-	    	clustersInfoBasesCashe.put(clusterID, clusterInfoBases);
 
-	    	return agentConnection.getInfoBasesShort(clusterID);
-	    }
+			List<IInfoBaseInfoShort> clusterInfoBases = agentConnection.getInfoBasesShort(clusterID);
+
+			// кеширование списка инфобаз. Ќе дороже ли кеш, чем получать заново список?
+			clustersInfoBasesCashe.put(clusterID, clusterInfoBases);
+
+			return agentConnection.getInfoBasesShort(clusterID);
+		}
 	    
 	    /**
 	     * Gets the list of full descriptions of infobases registered in the cluster
@@ -662,15 +661,15 @@ public class Config {
 	     * @param clusterId cluster ID
 	     * @return list of full descriptions of cluster infobases
 	     */	    
-	    public List<IInfoBaseInfo> getInfoBases(UUID clusterId)
-	    {
+		public List<IInfoBaseInfo> getInfoBases(UUID clusterID) {
 			if (agentConnection == null)
-			{
 				throw new IllegalStateException("The connection is not established.");
-			}
 
-	    	return agentConnection.getInfoBases(clusterId);
-	    }
+			if (!authenticateCluster(clusterID))
+				return new ArrayList<>(); // или пустой список?
+
+			return agentConnection.getInfoBases(clusterID);
+		}
 
 //	    public List<IInfoBaseInfoShort> getInfoBasesShort(UUID clusterID)
 //	    {
@@ -738,9 +737,9 @@ public class Config {
 			String infobaseName = "";
 	    	
 			// —перва достаем из кеша
-	    	List<IInfoBaseInfoShort> clusterInfoBases = clustersInfoBasesCashe.get(clusterID);
+	    	List<IInfoBaseInfoShort> clusterInfoBases = clustersInfoBasesCashe.getOrDefault(clusterID, new ArrayList<>());
 			for (IInfoBaseInfoShort infobase : clusterInfoBases) {
-				if (infobase.getInfoBaseId().equals(infobaseID)){
+				if (infobase.getInfoBaseId().equals(infobaseID)) {
 					infobaseName = infobase.getName();
 					break;
 				}
