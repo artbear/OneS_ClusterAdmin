@@ -1,0 +1,4 @@
+2021-05-09 20:32:42,438 INFO clusterAdminLibrary [main] start read config from file <.\config.json>
+2021-05-09 20:32:42,567 DEBUG clusterAdminLibrary [main] server Desktop:1540 start init
+2021-05-09 20:32:42,568 DEBUG clusterAdminLibrary [main] server Desktop2:1540 start init
+2021-05-09 20:32:42,568 INFO clusterAdminLibrary [main] end read config

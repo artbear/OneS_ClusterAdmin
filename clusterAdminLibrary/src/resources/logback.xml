@@ -1,36 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <appender name="STDOUT"
-        class="ch.qos.logback.core.ConsoleAppender">
-        <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder 
-            by default -->
-        <encoder>
-            <pattern>%d{dd.MM.yyyy HH:mm:ss.SSS} [%thread] %-5level  %logger{20} - %msg%n</pattern>
-        </encoder>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
+            </Pattern>
+        </layout>
     </appender>
  
-    <appender name="FILE"
-        class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${user.home}/clusterAdmin/logs/clusterAdmin.log</file>
-        <rollingPolicy
-            class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- daily rollover -->
-            <fileNamePattern>clusterAdmin.%d{yyyy-MM-dd}.log</fileNamePattern>
- 
-            <!-- Храним файлы логов 10 дней -->
-            <maxHistory>10</maxHistory>
- 
-            <!-- Максимальный размер файлов лога 1 гигабайт -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>./logs/app.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
  
         </rollingPolicy>
+
         <encoder>
-            <pattern>%d{dd.MM.yyyy HH:mm:ss.SSS} [%thread] %-5level  %logger{20} - %msg%n</pattern>
+            <pattern>%d %p %c{1.} [%t] %m%n</pattern>
         </encoder>
     </appender>
  
-    <root level="debug">
-        <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE" />
+    <logger name="clusterAdminLibrary" level="debug" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <root level="error">
+        <appender-ref ref="CONSOLE"/>
     </root>
+
 </configuration>

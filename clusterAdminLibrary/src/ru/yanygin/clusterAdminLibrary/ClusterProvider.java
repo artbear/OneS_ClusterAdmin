@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com._1c.v8.ibis.admin.IClusterInfo;
 import com._1c.v8.ibis.admin.IInfoBaseInfo;
 import com.google.gson.Gson;
@@ -25,47 +28,57 @@ import ru.yanygin.clusterAdminLibrary.Config.Server;
 public class ClusterProvider {
 	File configFile;
 	Config commonConfig;
-	
+
+	Logger LOGGER = LoggerFactory.getLogger("clusterAdminLibrary");
+
 	public ClusterProvider() {
 		
 		
 	}
 
 	public void readSavedKnownServers(String configPath) {
+		LOGGER.info("start read config from file <{}>", configPath);
 		
-		if (configPath.isBlank())
-		{
+		if (configPath.isBlank()) {
+			LOGGER.debug("config is blank, create new");
 			commonConfig = new Config();
 			return;
 		}
 		
 		configFile = new File(configPath);
-		if (!configFile.exists())
-		{
+		if (!configFile.exists()) {
+			LOGGER.debug("config file not exists, create new");
 			commonConfig = new Config();
 			return;
 		}
 		
-		JsonReader jsonReader;
+		JsonReader jsonReader = null;
 
 		try {
 			jsonReader = new JsonReader(
 					new InputStreamReader(new FileInputStream(configFile), StandardCharsets.UTF_8));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return;
+		} catch (FileNotFoundException excp) {
+			LOGGER.debug("read config error {}", excp);
+//			return;
 		}
 		Gson gson = new GsonBuilder()
 			    .excludeFieldsWithoutExposeAnnotation()
 			    .create();
 		
-		commonConfig = gson.fromJson(jsonReader, Config.class);
+		try {
+			commonConfig = gson.fromJson(jsonReader, Config.class);
+		} catch (Exception excp) {
+			LOGGER.debug("error convert config from json");
+//			return;
+		}
 
 		if (commonConfig == null) {
+			LOGGER.debug("config is null, after read json. Create new");
 			commonConfig = new Config();
 		}
 		else {
 			commonConfig.servers.forEach((server, config) -> {
+				LOGGER.debug("server {} start init", server);
 				config.init();
 //				if (config.autoconnect) {
 //					config.connect(false);
@@ -73,6 +86,7 @@ public class ClusterProvider {
 
 			});
 		}
+		LOGGER.info("end read config");
 	}
 	
 	public void saveKnownServers() {//String configPath) {

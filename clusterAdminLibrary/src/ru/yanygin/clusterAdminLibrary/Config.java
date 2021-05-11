@@ -8,6 +8,8 @@ import java.util.UUID;
 
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.MessageBox;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com._1c.v8.ibis.admin.AgentAdminException;
 import com._1c.v8.ibis.admin.IAgentAdminConnection;
@@ -32,6 +34,8 @@ public class Config {
 	@Expose
 	public Map<String, Server> servers = new HashMap<>(); // Надо определиться что должно являться ключем, агент (Server:1540) или менеджер (Server:1541)
 
+	public static Logger LOGGER = LoggerFactory.getLogger("clusterAdminLibrary");
+	
 	public Server CreateNewServer() {
 		return new Server("newServerAddress:1541");
 	}

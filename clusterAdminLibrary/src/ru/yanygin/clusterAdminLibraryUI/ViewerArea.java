@@ -94,11 +94,6 @@ public class ViewerArea extends Composite {
 	public ViewerArea(Composite parent, int style, Menu menu, ToolBar toolBar, ClusterProvider clusterProvider) {
 		super(parent, style);
 		
-		Logger logger = LoggerFactory.getLogger("ViewerArea");
-		
-
-		logger.info("application start");
-		
 		this.clusterProvider = clusterProvider;
 //		String configPath = "C:\\git\\OneS_ClusterAdmin\\config.json";
 		String configPath = ".\\config.json";
