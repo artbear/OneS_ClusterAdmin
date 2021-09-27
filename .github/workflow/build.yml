@@ -1,0 +1,30 @@
+name: Build linux
+
+on:
+  pull_request:
+    branches:
+      - '*'
+  push:
+    branches:
+      - 'master'
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Install vendor libs
+        run: |
+          sh lib\install-libs.bat
+      - name: Install clusterAdmin lib
+        run: |
+          cd clusterAdminLibrary
+          mvn -B clean install -Plinux
+      - name: Package Application
+        run:  |
+          cd clusterAdminApplication
+          mvn -B clean package -Plinux
