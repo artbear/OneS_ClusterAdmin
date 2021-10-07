@@ -99,7 +99,15 @@ public class Config {
 	@SerializedName("ReadClipboard")
 	@Expose
 	public boolean readClipboard;
-
+	
+	@SerializedName("AutoUpdateListEnabled")
+	@Expose
+	public boolean autoUpdateListEnabled;
+	
+	@SerializedName("AutoUpdateListPeriod")
+	@Expose
+	public long autoUpdateListPeriod;
+	
 	
 	private static Logger LOGGER = LoggerFactory.getLogger("clusterAdminLibrary"); //$NON-NLS-1$
 	

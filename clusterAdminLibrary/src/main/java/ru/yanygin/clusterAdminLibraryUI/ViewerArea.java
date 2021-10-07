@@ -84,6 +84,7 @@ import org.slf4j.LoggerFactory;
 
 public class ViewerArea extends Composite {
 	
+	private static final boolean autoUpdateListEnabled = true;
 	Image serverIcon;
 	Image serverIconUp;
 	Image serverIconDown;
@@ -361,12 +362,17 @@ public class ViewerArea extends Composite {
 					LOGGER.error("Error init SettingsDialog", excp); //$NON-NLS-1$
 					return;
 				}
+				boolean prevState = ClusterProvider.getCommonConfig().autoUpdateListEnabled;
 				int dialogResult = settingsDialog.open();
 				if (dialogResult == 0) {
 					clusterProvider.saveConfig();
 					for (TreeItem item : serversTree.getItems()) {
 						updateClustersInTree(item);
 					}
+					boolean curState = ClusterProvider.getCommonConfig().autoUpdateListEnabled;
+					if (prevState != curState && curState)
+						run.start();
+
 				}
 			}
 		});
@@ -2312,7 +2318,9 @@ public class ViewerArea extends Composite {
 				int dialogResult = editClusterDialog.open();
 				if (dialogResult == 0) {
 				}
+				
 			} else if (currentTable.equals(tableWorkingServers)) {
+				
 				Server server = (Server) item[0].getData(SERVER_INFO);
 				UUID clusterId = (UUID) item[0].getData(CLUSTER_ID);
 				UUID workingServerId = (UUID) item[0].getData(WORKINGSERVER_ID);
@@ -2373,6 +2381,18 @@ public class ViewerArea extends Composite {
 		}
 	};
 	
-	
+	Thread run = new Thread(new Runnable() {
+		@Override
+		public void run() {
+			while (ClusterProvider.getCommonConfig().autoUpdateListEnabled) {
+				try {
+					clickItemInServerTree(1);
+					Thread.sleep(ClusterProvider.getCommonConfig().autoUpdateListPeriod * 1000); // 1000 - 1 сек
+				} catch (InterruptedException ex) {
+//					run.stop();
+				}
+			}
+		}
+	});
 	
 }
